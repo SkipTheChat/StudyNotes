@@ -864,3 +864,168 @@ public Object deepClone() throws Exception{
 
 因为序列化产生的是两个完全独立的对象，所有无论嵌套多少个引用类型，序列化都是能实现深拷贝的。 
 
+
+
+
+
+# 7 ClassLoader
+
+主要作用是将class加载到JVM 。
+
+### 7.1类与类加载器
+
+**如果两个类来源于同一个Class文件，只要加载它们的类加载器不同，那么这两个类就必定不相等。**
+
+##### 7.1.1 类加载器介绍
+
+从Java虚拟机的角度分为两种不同的类加载器：启动类加载器（Bootstrap ClassLoader） 和其他类加载器。其中启动类加载器，使用C++语言实现，是虚拟机自身的一部分；其余的类加载器都由Java语言实现，独立于虚拟机之外，并且全都继承自java.lang.ClassLoader类。（这里只限于HotSpot虚拟机）。
+
+从Java开发人员的角度来看，绝大部分Java程序都会使用到以下3种系统提供的类加载器。
+
+- **启动类加载器（Bootstrap ClassLoader）：**
+
+这个类加载器负责将存放在\lib目录中的，或者被-Xbootclasspath参数所指定的路径中的，并且是虚拟机识别的（仅按照文件名识别，如rt.jar，名字不符合的类库即使放在lib目录中也不会被加载）类库加载到虚拟机内存中。
+
+- **扩展类加载器（Extension ClassLoader）**：
+
+这个加载器由sun.misc.Launcher$ExtClassLoader实现，它负责加载\lib\ext目录中的，或者被java.ext.dirs系统变量所指定的路径中的所有类库，开发者可以直接使用扩展类加载器。
+
+- **应用程序类加载器（Application ClassLoader）：**
+
+这个类加载器由sun.misc.Launcher$AppClassLoader实现。由于这个类加载器是ClassLoader中的getSystemClassLoader()方法的返回值，所以一般也称它为系统类加载器。它负责加载用户类路径（ClassPath）上所指定的类库，开发者可以直接使用这个类加载器，如果应用程序中没有自定义过自己的类加载器，一般情况下这个就是程序中默认的类加载器。
+
+我们的应用程序都是由这3种类加载器互相配合进行加载的，如果有必要，还可以加入自己定义的类加载器。
+
+
+
+##### 7.1.2  双亲委派模型
+
+双亲委派模型（Pattern Delegation Model）,要求除了顶层的启动类加载器外，其余的类加载器都应该有自己的父类加载器。这里父子关系通常是子类通过组合关系而不是继承关系来复用父加载器的代码。
+
+双亲委派模型（Pattern Delegation Model）：
+
+![1](D:/Jessica(note)/Marie(2019)/programming/08总笔记/JVM/assets/TIM%E6%88%AA%E5%9B%BE20191217200114.png)
+
+
+
+双亲委派模型的工作过程：
+
+ 如果一个类加载器收到了类加载的请求，先把这个请求委派给父类加载器去完成，只有当父加载器反馈自己无法完成加载请求时，子加载器才会尝试自己去加载。
+
+注意：双亲委派模型是Java设计者们推荐给开发者们的一种类加载器实现方式，并不是一个强制性 的约束模型。在java的世界中大部分的类加载器都遵循这个模型，但也有例外。
+
+
+
+##### 7.1.3 好处
+
+ 因为这样可以避免重复加载，当父亲已经加载了该类的时候，就没有必要子ClassLoader再加载一次。
+
+而且考虑到安全因素，我们试想一下，如果不使用这种委托模式，那我们就可以随时使用自定义的String来动态替代java核心api中定义的类型，这样会存在非常大的安全隐患，而双亲委托的方式，就可以避免这种情况，因为String已经在启动时就被引导类加载器（Bootstrcp ClassLoader）加载，所以用户自定义的ClassLoader永远也无法加载一个自己写的String，除非你改变JDK中ClassLoader搜索类的默认算法。 
+
+
+
+### 7.2 原理
+
+ ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用（不是继承的关系，是一个包含的关系），虚拟机内置的类加载器（Bootstrap ClassLoader）本身没有父类加载器，但可以用作其它ClassLoader实例的的父类加载器。**当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader  进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象**。 
+
+
+
+### 7.3 **自定义ClassLoader** 
+
+#####  7.3.1 为什么我们需要自定义类加载
+
+ **主要原因：**
+
+1.需要加载外部的Class,JVM提供的默认ClassLoader只能加载指定目录下的.jar和.class,如果我们想加载其它位置的class或者jar时，这些默认的类加载器是加载不到的（如果是文件格式必须配置到classpath）。例如：我们需要加载网络上的一个class字节流；  
+
+2.需要实现Class的隔离性。目前我们常用的Web服务器，如tomcat、jetty都实现了自己定义的类加载，这些类加载主要完成以下三个功能：
+
+- 实现加载Web应用指定目录下的jar和class
+- 实现部署在容器中的Web应用程共同使用的类库的共享
+- 实现部署在容器中各个Web应用程序自己私有类库的相互隔离
+
+
+
+##### 7.3.2 如何自定义类加载
+
+- **继承java.lang.ClassLoader**
+- **覆写父类的findClass()方法**
+
+
+
+Java除了上面所说的默认提供的classloader以外，它还容许应用程序可以自定义classloader，那么要想自定义classloader我们需要通过继承java.lang.ClassLoader来实现,接下来我们就来看看再自定义Classloader的时候，我们需要注意的几个重要的方法：
+
+**1.loadClass 方法** 
+
+```java
+protected synchronized Class<?> loadClass(String name, boolean resolve)  throws ClassNotFoundException   
+
+ {  // First, check if the class has already been loaded  Class c = findLoadedClass(name);
+
+//检查class是否已经被加载过了  if (c == null)
+ {     
+
+ try {      
+
+if (parent != null) {         
+
+ c = parent.loadClass(name, false); //如果没有被加载，且指定了父类加载器，则委托父加载器加载。    
+
+  } else {        
+
+  c = findBootstrapClass0(name);//如果没有父类加载器，则委托bootstrap加载器加载      } 
+
+     } catch (ClassNotFoundException e) {         
+
+ // If still not found, then invoke findClass in order          
+
+// to find the class.         
+
+ c = findClass(name);//如果父类加载没有加载到，则通过自己的findClass来加载。      } 
+
+ } 
+
+ if (resolve) 
+
+{     
+ resolveClass(c); 
+ }  
+return c;
+}
+```
+
+这里我们需要注意一点就是public Class<?> loadClass(String name) throws  ClassNotFoundException**没有被标记为final，也就意味着我们是可以override这个方法的，也就是说双亲委托机制是可以打破的。** 
+
+
+
+##### 2.**findClass** 
+
+源码：
+
+```java
+ protected Class<?> findClass(String name) throws ClassNotFoundException
+ {  
+   throw new ClassNotFoundException(name);
+  }
+```
+
+我们可以看出此方法默认的实现是直接抛出异常，其实这个方法就是留给我们应用程序来override的。那么具体的实现就看你的实现逻辑了，你可以从磁盘读取，也可以从网络上获取class文件的字节流，获取class二进制了以后就可以交给defineClass来实现进一步的加载。defineClass我们再下面再来描述。通过上面的分析，我们可以得出如下结论： 
+
+我们在写自己的ClassLoader的时候，如果想遵循双亲委托机制，只需要overrode findClass
+
+
+
+##### 3.defineClass
+
+```java
+protected final Class<?> defineClass(String name, byte[] b, int off, int len)  
+throws ClassFormatError
+{     
+ return defineClass(name, b, off, len, null);
+}
+
+```
+
+从上面的代码我们看出此方法被定义为了final，这也就意味着此方法不能被Override，其实这也是jvm留给我们的唯一的入口，通过这个唯  一的入口，jvm保证了类文件必须符合Java虚拟机规范规定的类的定义。此方法最后会调用native的方法来实现真正的类的加载工作。 
+
+![](./assets/5.5.png)
