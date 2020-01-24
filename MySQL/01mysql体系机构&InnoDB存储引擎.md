@@ -2,7 +2,7 @@
 
 ## 1.1.mysql体系结构
 
-![1](.../assets/1.1.png)
+![1](./assets/1.1.png)
 
 - MySQL向外提供的交互接口（Connectors）
 - 管理服务组件和工具组件(Management Service & Utilities)
@@ -136,11 +136,13 @@
 
 
 
+
 InnoDB为什么推荐使用自增ID作为主键？
 
     答：自增ID可以保证每次插入时B+索引是从右边扩展的，可以避免B+树和频繁合并和分裂（对比使用UUID）。如果使用字符串主键和随机主键，会使得数据随机插入，效率比较差。
 
  
+
 
 
 
@@ -163,7 +165,7 @@ InnoDB有多个内存块， 你可以认为这些内存块组成了一个大的�
 -  缓存磁盘上的数据， 方便快速地读取 ，并且在对磁盘文件的数据进行修改之前在这里缓存。
 -  重做日志 {redo log ) 缓冲。
 
-![1.2](../assets/1.2.png)
+![1.2](./assets/1.2.png)
 
 
 
@@ -204,7 +206,7 @@ InnoDB 存储引擎内存由以下几个部分组成：
 
 
 
-![1.3](../assets/1.3.png)
+![1.3](./assets/1.3.png)
 
 
 
@@ -301,7 +303,7 @@ InnoDB存储引擎开创性地设计了插入缓冲，对于非聚集索引的�
 
 先将脏页写入Doublewrite Buffer，由Doublewrite Buffer写入doublewrite共享表空间进行备份，然后再写入数据文件。当宕机时，由doublewrite进行数据恢复。
 
-![1.4](../assets/1.4.png)
+![1.4](./assets/1.4.png)
 
 
 
