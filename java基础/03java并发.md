@@ -453,6 +453,8 @@ class MyThread extends Thread {
 2. 线程抛出一个未捕获的Exception或Error。
 3. 直接调用该线程的stop()方法来结束该线程——该方法容易导致死锁，通常不推荐使用。
 
+
+
  
 
 # 4 终止线程4种方式
