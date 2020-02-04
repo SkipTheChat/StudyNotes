@@ -215,6 +215,33 @@ DI：Dependency Injection（依赖注入），指将对象的创建权，反转�
 
 
 
+### 2.3 常见问题
+
+##### 2.3.1 **Spring的IoC理解**
+
+1. **IOC：**就是控制反转，是指创建对象的控制权的转移，以前创建对象的主动权和时机是由自己把控的，而现在这种权力转移到Spring容器中，并由容器根据配置文件去创建实例和管理各个实例之间的依赖关系，对象与对象之间松散耦合，也利于功能的复用。
+2. **DI：**依赖注入，和控制反转是同一个概念的不同角度的描述，即应用程序在运行时依赖IoC容器来动态注入对象需要的外部资源,IOC是一种概念，而DI是实现IoC的方法。 
+3. 最直观的表达就是，IOC让对象的创建不用去new了，可以由spring自动生产，使用java的反射机制，根据配置文件在运行时动态的去创建对象以及管理对象，并调用对象的方法的。
+4. Spring的IOC有三种注入方式 ：构造器注入、setter方法注入、根据注解注入。
+5. 工厂模式：在Spring IoC中经常用到一个设计模式，即工厂模式。工厂模式提供创建对象的接口。
+
+> IoC让相互协作的组件保持松散的耦合，而AOP编程允许你把遍布于应用各层的功能分离出来形成可重用的功能组件。
+
+
+
+##### 2.3.2 BeanFactory&ApplicationContext
+
+- BeanFactory
+- ApplicationContext
+
+
+
+##### 2.3.3 IOC原理
+
+
+
+
+
 # 3 IOC（基于XML）
 
 ### 3.1 BeanFactory 
@@ -988,5 +1015,209 @@ public class TransactionManager {
 
 
 
+### 7.6 常见问题
 
+术语：
+
+- Joinpoint:连接点，被拦截到需要被增强的方法。where：去哪里做增强
+- Pointcut：切入点，哪些包中的哪些类中的哪些方法，可认为是连接点的集合。where:去哪些地方做增强
+- Advice：增强，当拦截到Joinpoint 之后，在方法执行的什么时机（when）做什么样(what)的增强。根据时机分为：前置增强、后置增强、异常增强、最终增强、环绕增强
+- Aspect：切面，Pointcut+Advice，去哪些地方+在什么时机+做什么增强
+- Target：目标对象,被代理的目标对象
+- Weaving：织入，把Advice 加到Target 上之后，创建出Proxy 对象的过程。
+- Proxy：一个类被AOP 织入增强后，产生的代理类
+
+
+
+> 下面的问题对照7.5.1的jdk动态代理注解配置
+
+##### 7.6.1 什么是Aspect？
+
+Aspect由PointCut和Advice组成
+
+它即包含了横切逻辑的定义，也包括了连接点的定义
+
+SpringAOP就是负责实施切面的框架，它将切面所定义的横切逻辑编辑到切面指定的连接点中
+
+AOP的工作重心在于如何将增强编织目标对象的连接点中，这里包含两个工作：
+
+1. 如何通过PointCut和Advice定位到特定的JoinPoint上
+2. 如何Advice中编写切面编程
+
+**可以简单地认为，使用@Aspect注解的类就是切面**
+
+eg：这是一个切面
+
+```java
+//用于增强的类需要配Conponent和Aspect注解
+@Component
+@Aspect
+public class TransactionManager {
+	
+	//表示给谁做增强
+	@Pointcut("execution(* cn.wolfcode.service.*Service.*(..))")
+	public void txPoint() {
+	}
+    
+    ........
+        
+}
+```
+
+
+
+##### 7.6.2 什么是JoinPoint?
+
+JoinPoint,切点，程序运行中的一些时间点，例如：
+
+API：
+
+| 方法名              | 功能                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| getSignature();     | 获取封装了署名信息的对象,在该对象中可以获取到目标方法名,所属类的Class等信息 |
+| Object[] getArgs(); | 获取传入目标方法的参数对象                                   |
+| Object getTarget(); | 获取被代理的对象                                             |
+| Object getThis();   | 获取代理对象                                                 |
+
+```java
+//用于增强的类需要配Conponent和Aspect注解
+@Component
+@Aspect
+public class TransactionManager {
+	
+	//表示给谁做增强
+	@Pointcut("execution(* cn.wolfcode.service.*Service.*(..))")
+	public void txPoint() {
+		
+	}
+	
+    //JoinPoint,时间点
+	@AfterThrowing(value="txPoint()",throwing="ex")
+	public void rollback(JoinPoint jp, Throwable ex) {
+		//ex和App-context.xml里面的ex一致
+		System.out.println("回滚事务,异常信息:" + ex.getMessage());
+	}
+
+	......
+}
+```
+
+
+
+
+
+##### 7.6.3 什么是PointCut？
+
+xml配置中的切入点，也就是对哪些包中的哪些类中的哪些方法进行配置。
+
+```java
+<bean id="transctionManager" class="cn.wolfcode.wms.tx.TransctionManager" />
+    
+<aop:config>	
+    <aop:aspect ref="transctionManager">
+    //pointcut:切入点，哪些包中的哪些类中的哪些方法，可认为是连接点的集合。
+        <aop:pointcut expression="
+        execution(* cn.wolfcode.wms.service.*Service.*(..))" id="txPoint" />
+            <aop:before method="begin" pointcut-ref="txPoint" />
+            <aop:after-returning method="commit" pointcut-ref="txPoint" />
+            <aop:after-throwing method="rollback" pointcut-ref="txPoint" />
+            <aop:after method="close" pointcut-ref="txPoint" />
+            <aop:around method="around" pointcut-ref="txPoint"/>
+    </aop:aspect>
+</aop:config>
+```
+
+
+
+##### 7.6.4 什么是Advice?
+
+Advice：增强，SpringAop使用一个Advice作为拦截器，在JoinPoint周围维护一系列的拦截器，当拦截到Joinpoint 之后，在方法执行的什么时机（when）做什么样(what)的增强。根据时机分为：前置增强、后置增强、异常增强、最终增强、环绕增强
+
+
+
+
+
+##### 7.6.5 什么是 Target ？
+
+目标对象,被代理的目标对象。
+
+注意指的不是原来的对象，而是织入Advice后所产生的代理对象
+
+通过JointPoint的getThis();方法可以获取代理对象，也就是Target，通过getTarget()可以获取获取被代理的对象。
+
+
+
+##### 7.6.6 AOP有哪些实现方式
+
+实现AOP的技术，主要分为两类：
+
+1. 静态代理
+2. 动态代理
+   - JDK动态代理
+   - CGLIB动态代理
+
+详情介绍7.1，7.2，7.3 
+
+
+
+##### 7.6.7 Spring AOP 和 AspectJ 之间的差别（重点）
+
+[博客](https://www.jianshu.com/p/872d3dbdc2ca)
+
+**概述：**
+
+**AspectJ是一个AOP框架，它能够对java代码进行AOP编译（一般在编译期进行），让java代码具有AspectJ的AOP功能（当然需要特殊的编译器）**，可以这样说AspectJ是目前实现AOP框架中最成熟，功能最丰富的语言，更幸运的是，AspectJ与java程序完全兼容，几乎是无缝关联。
+
+Spring注意到AspectJ在AOP的实现方式上依赖于特殊编译器(ajc编译器)，因此Spring很机智回避了这点，转向采用动态代理技术的实现原理来构建Spring AOP的内部机制（动态织入），这是与AspectJ（静态织入）最根本的区别。**Spring 只是使用了与 AspectJ 5 一样的注解，但仍然没有使用 AspectJ 的编译器，底层依是动态代理技术的实现，因此并不依赖于 AspectJ 的编译器**。 Spring AOP虽然是使用了那一套注解，其实实现AOP的底层是使用了动态代理(JDK或者CGLib)来动态植入。至于AspectJ的静态植入，不是本文重点，所以只提一提。 
+
+
+
+
+
+**Spring AOP 和 AspectJ 有不同的目标：**
+
+- Spring aop 旨在提供一个跨 Spring IoC 的简单的 aop 实现, 以解决程序员面临的最常见问题。它不打算作为一个完整的 AOP 解决方案 —— 它只能应用于由 Spring 容器管理的 bean。
+- AspectJ 是原始的 aop 技术, 目的是提供完整的 aop 解决方案。它更健壮, 但也比 Spring AOP 复杂得多。还值得注意的是, AspectJ 可以在所有域对象中应用。
+
+
+
+ **运用技术：**
+
+SpringAOP使用了两种代理机制，一种是基于JDK的动态代理，另一种是基于CGLib的动态代理，之所以需要两种代理机制，很大程度上是因为JDK本身只提供基于接口的代理，不支持类的代理。
+
+
+
+ **切面植入的方法：**
+
+1. 编译期织入
+2. 类装载期织入
+3. 动态代理织入 ----> 在运行期为目标类添加增强生成子类的方式，**Spring  AOP采用动态代理织入切面**
+
+
+
+**流行的框架：**     
+
+AOP现有两个主要的流行框架，即Spring AOP和Spring+AspectJ   
+
+![](./assets/1.3.png)
+
+
+
+
+
+此快速表总结了 Spring AOP 和 AspectJ 之间的关键区别:
+
+| Spring AOP                                       | AspectJ                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| 在纯 Java 中实现                                 | 使用 Java 编程语言的扩展实现                                 |
+| 不需要单独的编译过程                             | 除非设置 LTW，否则需要 AspectJ 编译器 (ajc)                  |
+| 只能使用运行时织入                               | 运行时织入不可用。支持   编译期织入和类装载期织入            |
+| 功能不强-仅支持方法级编织                        | 更强大 - 可以编织字段、方法、构造函数、静态初始值设定项、最终类/方法等......。 |
+| 只能在由 Spring 容器管理的 bean 上实现           | 可以在所有域对象上实现                                       |
+| 仅支持方法执行切入点                             | 支持所有切入点                                               |
+| 代理是由目标对象创建的, 并且切面应用在这些代理上 | 在执行应用程序之前 (在运行时) 前, 各方面直接在代码中进行织入 |
+| 比 AspectJ 慢多了                                | 更好的性能                                                   |
+| 易于学习和应用                                   | 相对于 Spring AOP 来说更复杂                                 |
+
+ 
 
