@@ -522,10 +522,6 @@ destroy-method="close">
 
 
 
-
-
-
-
 # 5 注解配置IoC 和DI
 
 **1. Autowired 注解和Qualifier 注解**
