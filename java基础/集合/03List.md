@@ -1,10 +1,10 @@
-# 2 List
+# List
 
-### 2.1 Vector类（类数组）
+## 1 Vector类（类数组）
 
 Vector类方法使用synchronized修饰的，也就是说是线程安全的。底层其实就是一个Object数组。
 
-##### 2.1.1 原理
+### 1.1 原理
 
 通过源码分析，发现在 Vector 类中有一个 **Object[] 类型数组**。
 
