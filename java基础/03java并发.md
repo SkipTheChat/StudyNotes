@@ -840,6 +840,14 @@ public class TestDemo2{
 
 ### 10.1 CAS
 
+CAS全称呼Compare-And-Swap，它是一条**CPU并发原语**
+
+他的功能是判断内存某个位置的值是否为预期值，如果是则更改为新的值，这个过程是原子的。
+
+CAS并发原语体现在JAVA语言中就是`sun.misc.Unsafe`类中各个方法。调用`Unsafe类中的CAS方法`，JVM会帮我们实现CAS汇编指令。这是一种完全依赖于硬件的功能，通过他实现了原子操作。由于CAS是一种系统原语，原语属于操作系统用语范畴，是由若干条指令组成的，用于完成某个功能的一个过程，并且原语的执行必须是连续的，在执行过程中不允许被中断，也就是说CAS是一条CPU的原子指令，不会造成数据不一致问题。
+
+
+
 ##### 10.1.1 CAS-区别于synchronized的乐观锁
 
 CAS：Compare and Swap，即比较再交换。
@@ -848,31 +856,150 @@ jdk5增加了并发包java.util.concurrent.*,其下面的类使用CAS算法实�
 
  
 
-##### 10.1.2 对CAS的理解
+##### 10.1.2 CAS源码
 
-对CAS的理解，CAS是一种无锁算法，CAS有3个操作数，内存值V，旧的预期值A，要修改的新值B。当且仅当预期值A和内存值V相同时，将内存值V修改为B，否则什么都不做。 
+常用属性：
 
-例如：因为t1和t2线程都同时去访问同一变量56，所以他们会把主内存的值完全拷贝一份到自己的工作内存空间，所以t1和t2线程的预期值都为56。
+```java
+public class AtomicInteger extends Number implements java.io.Serializable {
+    private static final long serialVersionUID = 6214790243416807050L;
+    private static final Unsafe unsafe = Unsafe.getUnsafe();
+    //内存地址
+    private static final long valueOffset;
+    //值，volatile修饰
+	private volatile int value;
+    
+      static {
+        try {
+            /*
+            getDeclaredFiled ：能获取类本身的属性成员（包括私有、共有、保护） 
+            				 反射，获取AtomicInteger.class的value属性,得到它的内存地址
+            */
+            valueOffset = unsafe.objectFieldOffset
+                (AtomicInteger.class.getDeclaredField("value"));
+        } catch (Exception ex) { throw new Error(ex); }
+    }
+    
+}
+```
 
-假设t1在与t2线程竞争中线程t1能去更新变量的值，而其他线程都失败。（失败的线程并不会被挂起，而是被告知这次竞争中失败，并可以再次发起尝试）。t1线程去更新变量值改为57，然后写到内存中。此时对于t2来说，内存值变为了57，与预期值56不一致，就操作失败了，这时t2会重新执行刚才的操作。
+静态代码块：
+
+- 当类加载器将类加载到JVM中的时候就会创建静态变量，静态变量加载的时候就会分配内存空间。
+- **静态代码块的代码只会在类的第一次初始化，也就是第一次被使用的时候执行一次** 
 
 
 
-##### 10.1.3 CAS开销&缺点
+`AtomicInteger.compareAndSet(int expect, indt update)`
+
+```java
+//expect：预期值，update：更新值
+public final boolean compareAndSet(int expect, int update) {
+    /*	@this:AtomicInteger对象本身
+    	@valueOffset:表示该变量值在内存中的偏移地址，因为Unsafe就是根据内存便宜地址获取数据的
+    	@expect:预期值
+    	@update:更新值
+    */
+    
+    //compareAndSwapInt：这是一个native方法。
+    //public final native boolean compareAndSwapInt(Object var1, long var2, int var4, int var5);
+        return unsafe.compareAndSwapInt(this, valueOffset, expect, update);
+    }
+```
+
+
+
+应用实例：
+
+```java
+import java.util.concurrent.atomic.AtomicInteger;
+public class CASDemo {
+    public static void main(String[] args) {
+       checkCAS();
+    }
+
+    public static void checkCAS(){
+        AtomicInteger atomicInteger = new AtomicInteger(5);
+      //第一个参数：expect，第二个参数：update
+        System.out.println(atomicInteger.compareAndSet(5, 2019) + "\t current data is " + atomicInteger.get());
+        System.out.println(atomicInteger.compareAndSet(5, 2014) + "\t current data is " + atomicInteger.get());
+    }
+}
+```
+
+
+
+输出：
+
+```java
+true	 current data is 2019
+false	 current data is 2019
+```
+
+
+
+##### 10.1.3 Unsafe
+
+比较当前工作内存中的值和主内存中的值，如果相同则执行规定操作，否则继续比较直到主内存和工作内存中的值一直为止
+
+- **Unsafe类中的所有方法都是native修饰的**，也就是说Unsafe类中的方法都直接调用操作系统底层资源执行相应任务，操作可以像C的指针一样直接操作内存，Java中CAS操作的执行依赖于Unsafe类的方法。
+- 变量valueOffset，表示该变量值在内存中的偏移地址，因为Unsafe就是根据内存便宜地址获取数据的
+- 变量value用volatile修饰，保证多线程之间的可见性
+
+
+
+示例：
+
+`atomicInteger.getAndIncrement();`
+
+```java
+public final int getAndIncrement() {
+    return unsafe.getAndAddInt(this, valueOffset, 1);
+}
+```
+
+
+
+
+
+```java
+/*
+var1：AtomicInteger对象本身
+var2：该对象的引用地址
+var4 ：更新值
+
+*/
+    public final int getAndAddInt(Object var1, long var2, int var4) {
+        int var5;
+        do {
+            // 通过var1 var2找出的主内存中真实的值
+            var5 = this.getIntVolatile(var1, var2);
+        } while(!this.compareAndSwapInt(var1, var2, var5, var5 + var4));//var4和与var5比较。如果相同，更新var5+var4并且返回true，如果不同，继续循环
+        return var5;
+    }
+```
+
+
+
+##### 10.1.4 CAS开销&缺点
+
+**优点：**
 
 CAS（比较并交换）是CPU指令级的操作，只有一步原子操作，所以非常快。 
 
-CAS的缺点：
+**缺点：**
 
-**1.只能保证对一个变量的原子性操作**
-当对一个共享变量执行操作时，我们可以使用循环CAS的方式来保证原子操作，但是对多个共享变量操作时，循环CAS就无法保证操作的原子性，这个时候就可以用锁来保证原子性。
+1. 只能保证对一个变量的原子性操作
 
-**2.长时间自旋会给CPU带来压力**
-我们可以看到getAndAddInt方法执行时，如果CAS失败，会一直进行尝试。如果CAS长时间一直不成功，可能会给CPU带来很大的开销。
+   对多个共享变量操作时，循环CAS就无法保证操作的原子性，这个时候就可以用锁来保证原子性
 
-**3.ABA问题**
+2. 长时间自旋会给CPU带来压力
 
-见10.3
+   我们可以看到getAndAddInt方法执行时，如果CAS失败，会一直进行尝试。如果CAS长时间一直不成功，可能会给CPU带来很大的开销。
+
+3. ABA问题
+
+   见10.3
 
 
 
@@ -882,7 +1009,7 @@ CAS的缺点：
 
 
 
-##### 10.2.1 integer
+##### 10.2.1 应用场景
 
 可以看出，integer想要达到AtomicInteger必须加上锁
 
@@ -900,7 +1027,7 @@ public class Sample1 {
 }
 ```
 
-AtomicInteger:
+AtomicInteger：getAndIncrement()方法在CAS里面有进行解析
 
 ```java
 public class Sample2 {
@@ -914,29 +1041,7 @@ public class Sample2 {
 }
 ```
 
-
-
-##### 10.2.2 源码分析
-
-```java
-public class AtomicInteger extends Number implements java.io.Serializable {
-    private static final long serialVersionUID = 6214790243416807050L;
-
-    // setup to use Unsafe.compareAndSwapInt for updates
-    private static final Unsafe unsafe = Unsafe.getUnsafe();
-    private static final long valueOffset;
-
-    static {
-        try {
-            valueOffset = unsafe.objectFieldOffset
-                (AtomicInteger.class.getDeclaredField("value"));
-        } catch (Exception ex) { throw new Error(ex); }
-    }
-
-    private volatile int value;
-```
-
-以上为AtomicInteger中的部分源码，这里value使用了volatile关键字，volatile在这里可以做到的作用是使得多个线程可以共享变量，但是问题在于使用volatile将使得VM优化失去作用，导致效率较低，所以要在必要的时候使用，因此AtomicInteger类不要随意使用，要在使用场景下使用。
+使用volatile将使得JVM优化失去作用，导致效率较低，所以要在必要的时候使用，因此AtomicInteger类不要随意使用，要在使用场景下使用。
 
 
 
@@ -948,6 +1053,164 @@ public class AtomicInteger extends Number implements java.io.Serializable {
 
 J.U.C 包提供了一个带有标记的原子引用类 AtomicStampedReference 来解决这个问题，它可以通过控制变量值的版本来保证 CAS 的正确性。大部分情况下 ABA 问题不会影响程序并发的正确性，如果需要解决 ABA 问题，改用传统的互斥同步可能会比原子类更高效。
 
+##### 10.3.1 解决方案：原子引用
+
+```java
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+public class AtomicRefrenceDemo {
+    public static void main(String[] args) {
+        User z3 = new User("张三", 22);
+        User l4 = new User("李四", 23);
+        AtomicReference<User> atomicReference = new AtomicReference<>();
+        atomicReference.set(z3);
+        System.out.println(atomicReference.compareAndSet(z3, l4) + "\t" + atomicReference.get().toString());
+        System.out.println(atomicReference.compareAndSet(z3, l4) + "\t" + atomicReference.get().toString());
+    }
+}
+
+@Getter
+@ToString
+@AllArgsConstructor
+class User {
+    String userName;
+    int age;
+}
+```
+
+输出结果：
+
+```java
+true	User(userName=李四, age=23)
+false	User(userName=李四, age=23)
+```
+
+
+
+##### 10.3.2 解决方案：AtomicStampedReference
+
+AtomicStampedReference它内部不仅维护了对象值，还维护了一个时间戳（我这里把它称为时间戳，实际上它可以使任何一个整数，它使用整数来表示状态值）。当AtomicStampedReference对应的数值被修改时，除了更新数据本身外，还必须要更新时间戳。当AtomicStampedReference设置对象值时，对象值以及时间戳都必须满足期望值，写入才会成功。因此，即使对象值被反复读写，写回原值，只要时间戳发生变化，就能防止不恰当的写入。
+
+源码：
+
+```java
+public class AtomicStampedReference<V> {
+private static class Pair<T> {//将值和版本号封装为一个Pair，比较就是比较这个Pair。
+    final T reference;
+    final int stamp;
+    private Pair(T reference, int stamp) {
+        this.reference = reference;
+        this.stamp = stamp;
+    }
+    static <T> Pair<T> of(T reference, int stamp) {
+        return new Pair<T>(reference, stamp);
+    }
+}
+
+private volatile Pair<V> pair;//多个线程同时修改这个pair要可见。比如：一直自加到100
+
+public AtomicStampedReference(V initialRef, int initialStamp) {//构造AtomicStampedReference时候把要多线程修改的
+//值封装成pair
+    pair = Pair.of(initialRef, initialStamp);
+}
+
+public V getReference() {//获取准备通过AtomicStampedReference来改变的值。
+    return pair.reference;
+}
+
+public int getStamp() {//获取准备通过AtomicStampedReference来改变的值的版本号。
+    return pair.stamp;
+}
+
+public V get(int[] stampHolder) {
+    Pair<V> pair = this.pair;
+    stampHolder[0] = pair.stamp;
+    return pair.reference;
+}
+
+public boolean weakCompareAndSet(V   expectedReference,
+                                 V   newReference,
+                                 int expectedStamp,
+                                 int newStamp) {
+    return compareAndSet(expectedReference, newReference,
+                         expectedStamp, newStamp);
+}
+    //旧值修改为新值。有3个：现在值2个，期望现在值2个，新值2个。
+
+//期望值和现在值2个相等，前提下，新值和现在值2个都相等不改变，否则该变。
+
+    public boolean compareAndSet(V   expectedReference,
+
+                                 V   newReference,
+
+                                 int expectedStamp,
+
+                                 int newStamp) {
+
+        Pair<V> current = pair;
+
+        return
+
+            //现在值和期望现在值里面2个一样直接返回false不需要更新。
+
+            expectedReference == current.reference &&
+
+            expectedStamp == current.stamp &&
+
+            //现在值和期望现在值里面2个一样需要更新
+
+            //新值和现在值2个都一样返回false不需要更新
+
+            ((newReference == current.reference &&
+
+              newStamp == current.stamp) ||
+
+              //现在值和期望现在值里面2个一样,并且新值和现在值有一个不一样，需要更新。
+
+             casPair(current, Pair.of(newReference, newStamp)));//改变旧的pair为新的pair，新的pair要重新构造一个新的。
+
+    }
+public void set(V newReference, int newStamp) {
+    Pair<V> current = pair;
+    if (newReference != current.reference || newStamp != current.stamp)
+        this.pair = Pair.of(newReference, newStamp);
+}
+
+public boolean attemptStamp(V expectedReference, int newStamp) {
+    Pair<V> current = pair;
+    return
+        expectedReference == current.reference &&
+        (newStamp == current.stamp ||
+         casPair(current, Pair.of(expectedReference, newStamp)));
+}
+
+// Unsafe mechanics
+
+private static final sun.misc.Unsafe UNSAFE = sun.misc.Unsafe.getUnsafe();
+private static final long pairOffset =
+    objectFieldOffset(UNSAFE, "pair", AtomicStampedReference.class);
+
+private boolean casPair(Pair<V> cmp, Pair<V> val) {
+    return UNSAFE.compareAndSwapObject(this, pairOffset, cmp, val);//改变里面的pair从cmp到val
+}
+
+static long objectFieldOffset(sun.misc.Unsafe UNSAFE,
+                              String field, Class<?> klazz) {
+    try {
+        return UNSAFE.objectFieldOffset(klazz.getDeclaredField(field));
+    } catch (NoSuchFieldException e) {
+        // Convert Exception to corresponding Error
+        NoSuchFieldError error = new NoSuchFieldError(field);
+        error.initCause(e);
+        throw error;
+      }
+   }
+}
+```
 
 
 
@@ -2113,6 +2376,12 @@ java 使用的线程调使用抢占式调度，Java 中线程会按优先级分�
  (2) 当一个新进程进入内存后，首先将它放入第一队列的末尾，按 FCFS 原则排队等待调度。当轮到该进程执行时，如它能在该时间片内完成，便可准备撤离系统；如果它在一个时间片结束时尚未完成，调度程序便将该进程转入第二队列的末尾，再同样地按 FCFS 原则等待调度执行；如果 它在第二队列中运行一个时间片后仍未完成，再依次将它放入第三队列，……，如此下去，当一个长作业(进程)从第一队列依次降到第 n 队列后，在第 n 队列便采取按时间片轮转的方式运行。 
 
 (3) 仅当第一队列空闲时，调度程序才调度第二队列中的进程运行；仅当第 1～(i-1)队列均空时，才会调度第 i 队列中的进程运行。如果处理机正在第 i 队列中为某进程服务时，又有新进程进入优 先权较高的队列(第 1～(i-1)中的任何一个队列)，则此时新进程将抢占正在运行进程的处理机，即由调度程序把正在运行的进程放回到第 i 队列的末尾，把处理机分配给新到的高优先权进程。  在多级反馈队列调度算法中，如果规定第一个队列的时间片略大于多数人机交互所需之处理时间时，便能够较好的满足各种类型用户的需要。
+
+
+
+# 17 ArrayList线程安全方案
+
+我们知道ArrayList是线程不安全的，请编写一个不安全的案例并给出解决方案
 
 
 

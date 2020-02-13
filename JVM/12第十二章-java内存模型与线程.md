@@ -16,13 +16,13 @@
 
 
 
-# 2 Java内存模型
+# 2 Java内存模型JMM
 
 ### 2.1 主内存与工作内存
 
-Java内存模型的主要目标是定义程序中各个变量的访问规则，即在虚拟机中将变量存储到内存和从内存中取出变量这样的底层细节。
+JMM（Java Memory Model）本身是一种抽象的概念，并不真实存在，Java内存模型的主要目标是**定义程序中各个变量的访问规则**，即在虚拟机中将变量存储到内存和从内存中取出变量这样的底层细节。
 
-变量包括了：
+**变量包括了：**
 
 - 实例字段
 - 静态字段
@@ -30,13 +30,21 @@ Java内存模型的主要目标是定义程序中各个变量的访问规则，�
 
 不包括局部变量与方法参数，因为是线程私有的，不会被共享，自然就不会存在竞争问题。 
 
+**JMM关于同步的规定：**
+
+1. 线程解锁前，必须把共享变量的值刷新回主内存
+2. 线程加锁前，必须读取主内存的最新值到自己的工作内存
+3. 加锁解锁是同一把锁
+
 
 
 ![9.2](./assets/9.2.jpg)
 
-- 主内存： Java内存模型规定了所有的变量都存储在主内存（Main Memory）中。
-- 工作内存：可与前面讲的处理器高速缓存类比，保存了被该线程使用到的变量的主内存副本拷贝。
-- 线程：线程对变量的所有操作（读取、赋值等）都必须在工作内存中进行，而不能直接读写主内存中的变量。不同的线程之间也无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成。
+![9.2](./assets/12.1.jpg)
+
+- **主内存：** Java内存模型规定了所有的变量都存储在主内存（Main Memory）中。
+- **工作内存：**可与前面讲的处理器高速缓存类比，保存了被该线程使用到的变量的主内存副本拷贝。
+- **线程：**线程对变量的所有操作（读取、赋值等）都必须在工作内存中进行，而不能直接读写主内存中的变量。不同的线程之间也无法直接访问对方工作内存中的变量，线程间变量值的传递均需要通过主内存来完成。
 
 
 
@@ -54,14 +62,14 @@ Java内存模型的主要目标是定义程序中各个变量的访问规则，�
 
 ##### 2.3.1 可见性
 
-保证此变量对所有线程的可见性：这里的“可见性”是指当一条线程修改了这个变量的值，新值对于其他线程来说是可以立即得知的。而普通变量不能做到这一点，普通变量的值在线程间传递均需要通过主内存来完成。由于volatile变量只能保证可见性，在不符合以下两条规则的运算场景中，我们仍然要通过加锁（使用synchronized或java.util.concurrent中的原子类）来保证原子性：
+保证此变量对所有线程的可见性：这里的“可见性”是指当一条线程修改了这个变量的值，新值对于其他线程来说是可以立即得知的。而普通变量不能做到这一点，普通变量的值在线程间传递均需要通过主内存来完成。由于vo**latile变量只能保证可见性，在不符合以下两条规则的运算场景中，我们仍然要通过加锁（使用synchronized或java.util.concurrent中的原子类）来保证原子性：**
 
 - 运算结果并不依赖变量的当前值
 - 或者能够确保只有单一的线程修改变量的值
 
 像如下的代码清单的这类场景就很适合使用volatile变量来控制并发，当shutdown()方法被调用时，能保证所有线程中执行的doWork()方法都立即停下来：
 
-```
+```java
 volatile boolean shutdownRequested;
 public void shutdown() {
     shutdownRequested = true;
@@ -79,7 +87,7 @@ public void doWork() {
 
 是允许编译器和处理器对指令重排序的，但是规定了as-if-serial语义， 不管怎么重排序，程序的执行结果不能改变。比如下面的程序段：
 
-```
+```java
 double pi = 3.14; //A
 
 double r = 1; //B
@@ -93,7 +101,7 @@ double s= pi * r * r;//C
 
 还可能是线程1先对flag赋值为true，随后执行到线程2，ret直接计算出结果，再到线程1，这时候a才赋值为2,很明显迟了一步。 
 
-```
+```java
 int a = 0;
 
 bool flag = false;
@@ -123,7 +131,7 @@ int ret = a * a;//4
 
 如下：volatile应用实例
 
-```
+```java
 Map configOptions;
 char[] configText;
 //此变量必须定义为volatile
@@ -152,7 +160,7 @@ doSomethingWithConfig();
 
 如果把加入volatile关键字的代码和未加入volatile关键字的代码都生成汇编代码，会发现加入volatile关键字的代码会多出一个lock前缀指令。
 
-lock前缀指令实际相当于一个内存屏障，内存屏障提供了以下功能：
+lock前缀指令实际相当于一个内存屏障，**内存屏障提供了以下功能：**
 
 （1）修改volatile变量时会强制将修改后的值刷新的主内存中。    
 
@@ -162,65 +170,76 @@ lock前缀指令实际相当于一个内存屏障，内存屏障提供了以下�
 
 
 
+
+
 ##### 2.3.4 应用场景
 
-1. 状态量标记
+**1.状态量标记**
 
-```
+```java
 int a = 0;
 
 volatile bool flag = false;
 
 public void write() {
 
-a = 2; //1
+    a = 2; //1
 
-flag = true; //2
+    flag = true; //2
 
 }
 
 public void multiply() {
 
-if (flag) { //3
+    if (flag) { //3
 
-int ret = a * a;//4
+        int ret = a * a;//4
 
-}
-
-}
-```
-
-
-
-2. 单例模式的实现，典型的双重检查锁定（DCL） 
-
-```
-class Singleton{
-
-private volatile static Singleton instance = null;
-
-private Singleton() {
-
-}
-
-public static Singleton getInstance() {
-
-if(instance==null) {
-
-synchronized (Singleton.class) {
-
-if(instance==null)
-
-instance = new Singleton();
-
-}
-
-}
-
-return instance;
-
-}
+    }
 
 }
 ```
 
+
+
+**2.单例模式的实现，典型的双重检查锁定（DCL）** 
+
+```java
+ public class Singleton {
+    private volatile static Singleton single=null;
+    private Singleton() {}
+     
+   public static Singleton getInstance() {
+        if (single == null) {  
+            synchronized (Singleton.class) {  
+               if (single == null) {  
+                  single = new Singleton(); 
+               }  
+            }  
+        }  
+        return single; 
+    }
+}
+```
+
+双重检查锁为什么要用volatile呢？
+
+**（1）禁止指令重排序**
+
+首先我们来看  ` single = new Singleton(); `，从字节码可以看到创建一个对象实例，可以分为三步： 
+
+1. 分配对象内存
+2. 调用构造器方法，执行初始化
+3. 将对象引用赋值给变量。
+
+很可能先完成了1,3步，然后此时其他线程执行到了这里判断single是null，（因为第2步还没有执行），这样就造成了多次初始化，创建了多个实例。 
+
+**（2） 保证可见性。**
+
+线程A在自己的工作线程内创建了实例，但此时还未同步到主存中；此时线程B在主存中判断instance还是null，那么线程B又将在自己的工作线程中创建一个实例，这样就创建了多个实例。 
+
+ 
+
+ 
+
+ 
