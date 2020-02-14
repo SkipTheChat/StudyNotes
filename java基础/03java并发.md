@@ -1723,32 +1723,56 @@ AQS 定义了两种资源共享方式：
 
 ### 13.2 阻塞队列
 
-##### 13.2.1 JAVA 阻塞队列原理 
+##### 13.2.1 原理 
 
 阻塞队列，关键字是阻塞，先理解阻塞的含义，在阻塞队列中，线程阻塞有这样的两种情况： 
 
 1. 当队列中没有数据的情况下，消费者端的所有线程都会被自动阻塞（挂起），直到有数据放入队列
 2. 当队列中填满数据的情况下，生产者端的所有线程都会被自动阻塞（挂起），直到队列中有空的位置，线程被自动唤醒。
 
+```mermaid
+graph LR
+Thread1-- put -->id1["阻塞队列"]
+subgraph BlockingQueue
+	id1
+end
+id1-- Take -->Thread2
+蛋糕师父--"放(柜满阻塞)"-->id2[蛋糕展示柜]
+subgraph 柜
+	id2
+end
+id2--"取(柜空阻塞)"-->顾客
+```
+
+**作用：**
+
+1. 在多线程领域：所谓阻塞，在某些情况下会挂起线程，一旦满足条件，被挂起的线程又会自动被唤醒
+
+2. 为什么需要BlockingQueue
+
+   好处时我们不需要关心什么时候需要阻塞线程，什么时候需要唤醒线程，因为这一切BlockingQueue都给你一手包办了
+
+   在concurrent包发布以前，在多线程环境下，==我们每个程序员都必须自己控制这些细节，尤其还要兼顾效率和线程安全==，而这回给我们程序带来不小的复杂度
+
 
 
 ##### 13.2.2 java中的阻塞队列
 
-1. ArrayBlockingQueue ：由数组结构组成的有界阻塞队列。 
-2. LinkedBlockingQueue ：由链表结构组成的有界阻塞队列。 
-3. PriorityBlockingQueue ：支持优先级排序的无界阻塞队列。 
-4. DelayQueue：使用优先级队列实现的无界阻塞队列。 
-5. SynchronousQueue：不存储元素的阻塞队列。 
-6. LinkedTransferQueue：由链表结构组成的无界阻塞队列。 
-7. LinkedBlockingDeque：由链表结构组成的双向阻塞队列
+- **ArrayBlockingQueue：**是一个基于数组结构的有界阻塞队列，此队列按FIFO原则对元素进行排序
+- **LinkedBlockingQueue：**是一个基于链表结构的阻塞队列，此队列按FIFO排序元素，吞吐量通常要高于ArrayBlockingQueue
+- **SynchronousQueue：**是一个不存储元素的阻塞队列，插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，吞吐量通常要高于ArrayBlockingQueue和LinkedBlockingQueue。也即单个元素的阻塞队列。非常适合于传递性场景
+- PriorityBlockingQueue:支持优先级排序的无界阻塞队列。默认情况下元素采取自然顺序升序排列。可以自定义实现compareTo()方法来指定元素进行排序规则，
+- DelayQueue:使用优先级队列实现的延迟无界阻塞队列，适用于缓存失效、定时任务
+- LinkedTransferQueue:由链表结构组成的无界阻塞队列。
+- LinkedBlockingDeque:由历览表结构组成的双向阻塞队列。
 
 ![](./assets/3.7.png)
 
 
 
-##### 13.2.3 ArrayBlockingQueue （公平、非公平） 
+ **1.ArrayBlockingQueue （公平、非公平）**
 
-用数组实现的有界阻塞队列。此队列按照先进先出（FIFO）的原则对元素进行排序。默认情况下不保证访问者公平的访问队列。
+此队列按照先进先出（FIFO）的原则对元素进行排序。默认情况下不保证访问者公平的访问队列。
 
 所谓公平访问队列是指阻塞的所有生产者线程或消费者线程，当队列可用时，可以按照阻塞的先后顺序访问队列，即先阻塞的生产者线程，可以先往队列里插入元素，先阻塞的消费者线程，可以先从队列里获取元素。通常情况下为了保证公平性会降低吞吐量。我们可以使用以下代码创建一个公平的阻塞队列： 
 
@@ -1758,56 +1782,154 @@ ArrayBlockingQueue fairQueue = new ArrayBlockingQueue(1000,true);
 
 
 
-##### 13.2.3 LinkedBlockingQueue（两个独立锁提高并发） 
+**2.LinkedBlockingQueue（两个独立锁提高并发）**
 
-基于链表的阻塞队列，同 ArrayListBlockingQueue 类似，此队列按照先进先出（FIFO）的原则对元素进行排序。而 LinkedBlockingQueue 之所以能够高效的处理并发数据，还因为其对于生产者端和消费者端分别采用了独立的锁来控制数据同步，这也意味着在高并发的情况下生产者和消费者可以并行地操作队列中的数据，以此来提高整个队列的并发性能。 
+基于链表的阻塞队列，同 ArrayListBlockingQueue 类似，此队列按照先进先出（FIFO）的原则对元素进行排序，但是却有别于一般的队列，在于该队列至少有一个节点，头节点不含有元素。
 
-LinkedBlockingQueue不同于ArrayBlockingQueue，它如果不指定容量，默认为`Integer.MAX_VALUE`，也就是无界队列。所以为了避免队列过大造成机器负载或者内存爆满的情况出现，我们在使用的时候建议手动传一个队列的大小。 
+LinkedBlockingQueue不同于ArrayBlockingQueue，它如果不指定容量，默认为`Integer.MAX_VALUE`，也就是无界队列。我们在使用的时候建议手动传一个队列的大小。 
 
+LinkedBlockingQueue中**维持两把锁，一把锁用于入队，一把锁用于出队**，这也就意味着，同一时刻，只能有一个线程执行入队 。换句话说，虽然入队和出队两个操作同时均只能有一个线程操作，但是可以一个入队线程和一个出队线程共同执行，也就意味着可能同时有两个线程在操作队列，那么为了维持线程安全，LinkedBlockingQueue使用一个AtomicInterger类型的变量表示当前队列中含有的元素个数，所以可以确保两个线程之间操作底层队列是线程安全的。
 
-
-它的内部由两个ReentrantLock来实现出入队列的线程安全，由各自的Condition对象的await和signal来实现等待和唤醒功能。**它和ArrayBlockingQueue的不同点在于：**
-
-- 队列大小有所不同，ArrayBlockingQueue是有界的初始化必须指定大小，而LinkedBlockingQueue可以是有界的也可以是无界的(Integer.MAX_VALUE)，对于后者而言，当添加速度大于移除速度时，在无界的情况下，可能会造成内存溢出等问题。
-- 数据存储容器不同，ArrayBlockingQueue采用的是数组作为数据存储容器，而LinkedBlockingQueue采用的则是以Node节点作为连接对象的链表。
-- 由于ArrayBlockingQueue采用的是数组的存储容器，因此在插入或删除元素时不会产生或销毁任何额外的对象实例，而LinkedBlockingQueue则会生成一个额外的Node对象。这可能在长时间内需要高效并发地处理大批量数据的时，对于GC可能存在较大影响。
-- 两者的实现队列添加或移除的锁不一样，ArrayBlockingQueue实现的队列中的锁是没有分离的，即添加操作和移除操作采用的同一个ReenterLock锁，而LinkedBlockingQueue实现的队列中的锁是分离的，其添加采用的是putLock，移除采用的则是takeLock，这样能大大提高队列的吞吐量，也意味着在高并发的情况下生产者和消费者可以并行地操作队列中的数据，以此来提高整个队列的并发性能。
+ArrayBlockingQueue实现的队列中的锁是没有分离的，即添加操作和移除操作采用的同一个ReenterLock锁，而LinkedBlockingQueue实现的队列中的锁是分离的，其添加采用的是putLock，移除采用的则是takeLock，这样能大大提高队列的吞吐量，也意味着在高并发的情况下生产者和消费者可以并行地操作队列中的数据，以此来提高整个队列的并发性能。
 
 
 
-##### 13.2.4 PriorityBlockingQueue（compareTo 排序实现优先） 
+##### 13.2.3 实现一个阻塞队列
 
-是一个支持优先级的无界队列。默认情况下元素采取自然顺序升序排列。可以自定义实现compareTo()方法来指定元素进行排序规则，或者初始化 PriorityBlockingQueue 时，指定构造参数 Comparator 来对元素进行排序。需要注意的是不能保证同优先级元素的顺序。 
+实现ArrayBlockingQueue:
+
+```java
+package demo;
+
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class BlockingQueue {
+
+    /** 存放元素的数组 */
+    private final Object[] items;
+
+    /** 弹出元素的位置 */
+    private int takeIndex;
+
+    /** 插入元素的位置 */
+    private int putIndex;
+
+    /** 队列中的元素总数 */
+    private int count;
+
+    /** 显式锁 */
+    private final ReentrantLock lock = new ReentrantLock();
+
+    /** 锁对应的条件变量 */
+    private final Condition condition = lock.newCondition();
+    
+    /**
+     * 指定队列大小的构造器
+     *
+     * @param capacity  队列大小
+     */
+    public BlockingQueue(int capacity) {
+        if (capacity <= 0)
+            throw new IllegalArgumentException();
+        items = new Object[capacity];
+    }
+
+    /**
+     * 入队操作
+     *
+     * @param e 待插入的对象
+     */
+    private void enqueue(Object e) {
+        // 将对象e放入putIndex指向的位置
+        items[putIndex] = e;
+
+        // putIndex向后移一位，如果已到末尾则返回队列开头(位置0)
+        if (++putIndex == items.length)
+            putIndex = 0;
+
+        // 增加元素总数
+        count++;
+    }
+
+    /**
+     * 出队操作
+     *
+     * @return  被弹出的元素
+     */
+    private Object dequeue() {
+        // 取出takeIndex指向位置中的元素
+        // 并将该位置清空
+        Object e = items[takeIndex];
+        items[takeIndex] = null;
+
+        // takeIndex向后移一位，如果已到末尾则返回队列开头(位置0)
+        if (++takeIndex == items.length)
+            takeIndex = 0;
+
+        // 减少元素总数
+        count--;
+
+        // 返回之前代码中取出的元素e
+        return e;
+    }
 
 
+    /**
+     * 将指定元素插入队列
+     *
+     * @param e 待插入的对象
+     */
+    public void put(Object e) throws InterruptedException {
+        lock.lockInterruptibly();
+        try {
+            while (count == items.length) {
+                // 队列已满时进入休眠
+                // 使用与显式锁对应的条件变量
+                condition.await();
+            }
 
-##### 13.2.5 DelayQueue（缓存失效、定时任务 ） 
+            // 执行入队操作，将对象e实际放入队列中
+            enqueue(e);
 
-是一个支持延时获取元素的无界阻塞队列。队列使用 PriorityQueue 来实现。队列中的元素必须实现 Delayed 接口，在创建元素时可以指定多久才能从队列中获取当前元素。只有在延迟期满时才能从队列中提取元素。我们可以将 DelayQueue 运用在以下应用场景： 
+            // 通过条件变量唤醒休眠线程
+            condition.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
 
-1. 缓存系统的设计：可以用 DelayQueue 保存缓存元素的有效期，使用一个线程循环查询DelayQueue，一旦能从 DelayQueue 中获取元素时，表示缓存有效期到了。
-2. 定时任务调度：使用 DelayQueue 保存当天将会执行的任务和执行时间，一旦从DelayQueue 中获取到任务就开始执行，从比如 TimerQueue 就是使用 DelayQueue 实现的。
+    /**
+     * 从队列中弹出一个元素
+     *
+     * @return  被弹出的元素
+     */
+    public Object take() throws InterruptedException {
+        lock.lockInterruptibly();
+        try {
+            while (count == 0) {
+                // 队列为空时进入休眠
+                // 使用与显式锁对应的条件变量
+                condition.await();
+            }
+
+            // 执行出队操作，将队列中的第一个元素弹出
+            Object e = dequeue();
+
+            // 通过条件变量唤醒休眠线程
+            condition.signalAll();
+
+            return e;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+}
+
+```
 
 
-
-##### 13.2.6 SynchronousQueue（不存储数据、可用于传递数据） 
-
-是一个不存储元素的阻塞队列。每一个 put 操作必须等待一个 take 操作，否则不能继续添加元素。SynchronousQueue 可以看成是一个传球手，负责把生产者线程处理的数据直接传递给消费者线程。队列本身并不存储任何元素，非常适合于传递性场景,比如在一个线程中使用的数据，传递给另外一个线程使用，SynchronousQueue 的吞吐量高于 LinkedBlockingQueue和ArrayBlockingQueue。 
-
-
-
-##### 13.2.7 LinkedTransferQueue 
-
-是一个由链表结构组成的无界阻塞 TransferQueue 队列。相对于其他阻塞队列， LinkedTransferQueue 多了 tryTransfer 和 transfer 方法。 
-
-1. transfer 方法：如果当前有消费者正在等待接收元素（消费者使用 take()方法或带时间限制的poll()方法时），transfer 方法可以把生产者传入的元素立刻 transfer（传输）给消费者。如果没有消费者在等待接收元素，transfer 方法会将元素存放在队列的 tail 节点，并等到该元素被消费者消费了才返回。 
-2. tryTransfer 方法。则是用来试探下生产者传入的元素是否能直接传给消费者。如果没有消费 者等待接收元素，则返回 false。和 transfer 方法的区别是 tryTransfer 方法无论消费者是否接收，方法立即返回。而 transfer 方法是必须等到消费者消费了才返回。对于带有时间限制的 tryTransfer(E e, long timeout, TimeUnit unit)方法，则是试图把生产者传入的元素直接传给消费者，但是如果没有消费者消费该元素则等待指定的时间再返回，如果超时还没消费元素，则返回 false，如果在超时时间内消费了元素，则返回 true。 
-
-
-
-##### 13.2.8 LinkedBlockingDeque 
-
-是一个由链表结构组成的双向阻塞队列。所谓双向队列指的你可以从队列的两端插入和移出元素。双端队列因为多了一个操作队列的入口，在多线程同时入队时，也就减少了一半的竞争。相比其他的阻塞队列，LinkedBlockingDeque 多了 addFirst，addLast，offerFirst，offerLast， peekFirst，peekLast 等方法，以 First 单词结尾的方法，表示插入，获取（peek）或移除双端队列的第一个元素。以 Last 单词结尾的方法，表示插入获取或移除双端队列的最后一个元素。另 外插入方法 add 等同于 addLast，移除方法 remove 等效于 removeFirst。但是 take 方法却等同于 takeFirst，不知道是不是 Jdk 的 bug，使用时还是用带有 First 和 Last 后缀的方法更清楚。 在初始化 LinkedBlockingDeque 时可以设置容量防止其过渡膨胀。另外双向阻塞队列可以运用在 “工作窃取”模式中.
 
 
 
@@ -1817,7 +1939,11 @@ LinkedBlockingQueue不同于ArrayBlockingQueue，它如果不指定容量，默�
 
 维护了一个计数器 cnt，每次调用 countDown() 方法会让计数器的值减 1，减到 0 的时候，那些因为调用 await() 方法而在等待的线程就会被唤醒。
 
-<div align="center"> <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/ba078291-791e-4378-b6d1-ece76c2f0b14.png" width="300px"> </div><br>
+应用例如：
+
+应用程序的主线程希望在负责启动框架服务的线程已经启动所有的框架服务之后再执行
+
+ <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/ba078291-791e-4378-b6d1-ece76c2f0b14.png" width="300px"> 
 
 ```java
 public class CountdownLatchExample {
@@ -1832,6 +1958,7 @@ public class CountdownLatchExample {
                 countDownLatch.countDown();
             });
         }
+        
         countDownLatch.await();
         System.out.println("end");
         executorService.shutdown();
@@ -1853,9 +1980,9 @@ run..run..run..run..run..run..run..run..run..run..end
 
 CyclicBarrier 和 CountdownLatch 的一个区别是，CyclicBarrier 的计数器通过调用 reset() 方法可以循环使用，所以它才叫做循环屏障。
 
-CyclicBarrier 有两个构造函数，其中 parties 指示计数器的初始值，barrierAction 在所有线程都到达屏障的时候会执行一次。
+可循环（Cyclic）使用的屏障。让一组线程到达一个屏障（也可叫同步点）时被阻塞，知道最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续干活，线程进入屏障通过CycliBarrier的await()方法
 
-<div align="center"> <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/f71af66b-0d54-4399-a44b-f47b58321984.png" width="300px"> </div><br>
+ <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/f71af66b-0d54-4399-a44b-f47b58321984.png" width="300px"> 
 
 ```java
 public CyclicBarrier(int parties, Runnable barrierAction) {
@@ -1903,92 +2030,51 @@ before..before..before..before..before..before..before..before..before..before..
 
 ### 13.5 Semaphore 信号量
 
-Semaphore是一种在多线程环境下使用的设施，该设施负责协调各个线程，以保证它们能够正确、合理的使用公共资源的设施，也是操作系统中用于控制进程同步互斥的量。Semaphore是一种**计数信号量，用于管理一组资源**，内部是基于AQS的共享模式。它**相当于给线程规定一个量从而控制允许活动的线程数。**
+SeSemaphore是一种**计数信号量，内部是基于AQS的共享模式。**它相当于给线程规定一个量从而控制允许活动的线程数，可以代替Synchronize和Lock。
+
+信号量主要用于两个目的：
+
+- **多个共享资源的互斥作用**
+- **并发线程数的控制**
 
 
 
-##### 13.5.1 代码讲解
+##### 13.5.1 抢车位案例
 
 ```java
-package concurrent;
+package com.jian8.juc.conditionThread;
+
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.LinkedBlockingQueue;
+
 public class SemaphoreDemo {
-	private static final Semaphore semaphore=new Semaphore(3);
-	private static final ThreadPoolExecutor threadPool=new ThreadPoolExecutor(5,10,60,TimeUnit.SECONDS,new LinkedBlockingQueue<Runnable>());
-	
-	private static class InformationThread extends Thread{
-		private final String name;
-		private final int age;
-		public InformationThread(String name,int age)
-		{
-			this.name=name;
-			this.age=age;
-		}
-		
-		public void run()
-		{
-			try
-			{
-                //获取一个线程
-				semaphore.acquire();
-				System.out.println(Thread.currentThread().getName()+":大家好，我是"+name+"我今年"+age+"岁当前时间为："+System.currentTimeMillis());
-				Thread.sleep(1000);
-				System.out.println(name+"要准备释放许可证了，当前时间为："+System.currentTimeMillis());
-				System.out.println("当前可使用的许可数为："+semaphore.availablePermits());
-                //释放这个线程
-				semaphore.release();
-				
-			}
-			catch(InterruptedException e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
-	public static void main(String[] args)
-	{
-		String[] name= {"李明","王五","张杰","王强","赵二","李四","张三"};
-		int[] age= {26,27,33,45,19,23,41};
-		for(int i=0;i<7;i++)
-		{
-			Thread t1=new InformationThread(name[i],age[i]);
-			threadPool.execute(t1);
-		}
-	}
- 
+    public static void main(String[] args) {
+        //限定每次只能3个线程
+        Semaphore semaphore = new Semaphore(3);//模拟三个停车位
+        for (int i = 1; i <= 6; i++) {//模拟6部汽车
+            new Thread(() -> {
+                try {
+                    semaphore.acquire();
+                    System.out.println(Thread.currentThread().getName() + "\t抢到车位");
+                    try {
+                        TimeUnit.SECONDS.sleep(3);//停车3s
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println(Thread.currentThread().getName() + "\t停车3s后离开车位");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    semaphore.release();
+                }
+            }, "Car " + i).start();
+        }
+    }
 }
+
 ```
 
 
-
-**运行结果：可以看出，每次只能限制三个线程运行。只有某个线程被释放了，才能开启另一个线程。**
-
-```java
-pool-1-thread-3:大家好，我是张杰我今年33岁当前时间为：1520424000186
-pool-1-thread-1:大家好，我是李明我今年26岁当前时间为：1520424000186
-pool-1-thread-2:大家好，我是王五我今年27岁当前时间为：1520424000186
-张杰要准备释放许可证了，当前时间为：1520424001187
-李明要准备释放许可证了，当前时间为：1520424001187
-王五要准备释放许可证了，当前时间为：1520424001187
-当前可使用的许可数为：0
-当前可使用的许可数为：0
-当前可使用的许可数为：0
-pool-1-thread-4:大家好，我是王强我今年45岁当前时间为：1520424001187
-pool-1-thread-2:大家好，我是张三我今年41岁当前时间为：1520424001187
-pool-1-thread-1:大家好，我是李四我今年23岁当前时间为：1520424001187
-李四要准备释放许可证了，当前时间为：1520424002187
-王强要准备释放许可证了，当前时间为：1520424002187
-当前可使用的许可数为：0
-张三要准备释放许可证了，当前时间为：1520424002187
-pool-1-thread-5:大家好，我是赵二我今年19岁当前时间为：1520424002187
-当前可使用的许可数为：0
-当前可使用的许可数为：0
-赵二要准备释放许可证了，当前时间为：1520424003188
-当前可使用的许可数为：2
-```
 
 
 
@@ -2383,11 +2469,9 @@ java 使用的线程调使用抢占式调度，Java 中线程会按优先级分�
 
 
 
+博客参考：
 
-
-
-
-博客参考：https://blog.csdn.net/m0_37840000/article/details/79756932
+https://blog.csdn.net/m0_37840000/article/details/79756932
 
 https://blog.csdn.net/qq_34490018/article/details/81609147
 
