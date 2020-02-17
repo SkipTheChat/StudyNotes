@@ -1683,43 +1683,460 @@ java.util.concurrent（J.U.C）大大提高了并发性能，AQS 被认为是 J.
 
 ### 13.1 AQS
 
-AbstractQueuedSynchronizer,简称AQS,为构建不同的同步组件(重入锁,读写锁,CountDownLatch等)提供了可扩展的基础框架 ，是除了java自带的synchronized关键字之外的锁机制，这个类在java.util.concurrent.locks包
+AbstractQueuedSynchronizer,简称AQS,是除了java自带的synchronized关键字之外的锁机制。
 
-AQS以模板方法模式在内部定义了获取和释放同步状态的模板方法,并留下钩子函数供子类继承时进行扩展,由子类决定在获取和释放同步状态时的细节,从而实现满足自身功能特性的需求。除此之外,AQS通过内部的同步队列管理获取同步状态失败的线程,向实现者屏蔽了线程阻塞和唤醒的细节。 
+AQS以模板方法模式在内部定义了获取和释放同步状态的模板方法,并留下钩子函数供子类继承时进行扩展,由子类决定在获取和释放同步状态时的细节，向实现者屏蔽了线程阻塞和唤醒的细节。 
 
 ##### 13.1.1 AQS的核心思想
 
-AQS就是基于CLH队列，用volatile修饰共享变量state，线程通过CAS去改变状态符，成功则获取锁成功，失败则进入等待队列，等待被唤醒。
+AQS就是基于CLH队列，用volatile修饰共享变量state，线程通过CAS去改变状态符，成功则获取锁成功，失败则进入等待队列，等待被唤醒。子类必须通过：
 
- **AQS是将每一条请求共享资源的线程封装成一个CLH锁队列的一个结点（Node），来实现锁的分配。**
+- getState()：获取当前的同步状态
+- setState(int newState)：设置当前同步状态
+- compareAndSetState(int expect,int update)：使用CAS设置当前状态，该方法能够保证状态设置的原子性。
 
-**注意：AQS是自旋锁：**在等待唤醒的时候，经常会使用自旋（while(!cas())）的方式，不停地尝试获取锁，直到被其他线程获取成功
-
-**实现了AQS的锁有：自旋锁、互斥锁、读锁写锁、条件产量、信号量、栅栏都是AQS的衍生物**
+三个方法修改获取锁的状态值state。
 
  
 
-##### 13.1.2 AQS实现的具体方式
+##### 13.1.2 **AQS支持的锁的类别** 
+
+ AQS支持独占锁和共享锁两种。
+
+- 独占锁：锁在一个时间点只能被一个线程占有。根据锁的获取机制，又分为“公平锁”和“非公平锁”。ReentrantLock和ReentrantReadWriteLock.Writelock
+- 共享锁：JUC包中ReentrantReadWriteLock.ReadLock，CyclicBarrier，CountDownLatch和Semaphore
+
+ 
+
+#####  13.1.3 **基于AQS实现锁** 
+
+AQS中没有实现任何的同步接口，所以一般子类通过继承AQS以内部类的形式实现锁机制。一般通过继承AQS类实现同步器，通过getState、setState、compareAndSetState来监测状态，并重写以下方法：
+
+- tryAcquire()：独占方式。尝试获取资源，成功则返回true，失败则返回false。
+- tryRelease()：独占方式。尝试释放资源，成功则返回true，失败则返回false。
+- tryAcquireShared()：共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。
+- tryReleaseShared()：共享方式。尝试释放资源，如果释放后允许唤醒后续等待结点返回true，否则返回false。
+- isHeldExclusively()：该线程是否正在独占资源。只有用到condition才需要去实现它。
+
+一般来说，自定义同步器要么是独占方法，要么是共享方式，他们也只需实现tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。但AQS也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。
+
+ 
+
+
+
+##### 13.1.4 源码
+
+[博客](https://www.jianshu.com/p/4983812c8d01)
+
+  **AQS是将每一条请求共享资源的线程封装成一个CLH锁队列的一个结点（Node），来实现锁的分配。**
+
+**注意：AQS是自旋锁：**在等待唤醒的时候，经常会使用自旋（while(!cas())）的方式，不停地尝试获取锁，直到被其他线程获取成功
 
 - 如果被请求的共享资源空闲，则将当前请求资源的线程设置为有效的工作线程，并将共享资源设置为锁定状态。
 - 如果被请求的共享资源被占用，那么AQS需要用CLH队列锁，将暂时获取不到锁的线程加入到队列中。
 
+**state既表示资源，又表示重入锁。当state==0时，表示资源空闲可以获得。当state>0时，表示某线程持有的重入锁个数。**
+
 ![img](https://img-blog.csdnimg.cn/20181128142923147.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L211bGluc2VuNzc=,size_16,color_FFFFFF,t_70)
 
+> 存储形式-Node
+
+在Node内部类中，声明了pre、next节点用于队列的连接，同时保存了waitStatus状态。 
+
+```java
+package demo;
+
+import java.util.concurrent.locks.AbstractOwnableSynchronizer;
+import java.util.concurrent.locks.LockSupport;
+
+public abstract class AbstractQueuedSynchronizer
+        extends AbstractOwnableSynchronizer
+        implements java.io.Serializable {
+    
+    //native方法，本来应该搁在最后的…搁这儿方便看
+    private static final Unsafe unsafe = Unsafe.getUnsafe();
+    //都是内存位置
+    private static final long stateOffset;
+    private static final long headOffset;
+    private static final long tailOffset;
+    private static final long waitStatusOffset;
+    private static final long nextOffset;
+
+	//准备阶段，静态变量赋予零值
+	//初始化阶段，静态代码块执行（包括对静态变量的赋值）
+    static {
+        try {
+            stateOffset = unsafe.objectFieldOffset
+                (AbstractQueuedSynchronizer.class.getDeclaredField("state"));
+            headOffset = unsafe.objectFieldOffset
+                (AbstractQueuedSynchronizer.class.getDeclaredField("head"));
+            tailOffset = unsafe.objectFieldOffset
+                (AbstractQueuedSynchronizer.class.getDeclaredField("tail"));
+            waitStatusOffset = unsafe.objectFieldOffset
+                (Node.class.getDeclaredField("waitStatus"));
+            nextOffset = unsafe.objectFieldOffset
+                (Node.class.getDeclaredField("next"));
+
+        } catch (Exception ex) { throw new Error(ex); }
+    }
+
+    /**
+     * CAS head field. Used only by enq.
+     */
+    private final boolean compareAndSetHead(Node update) {
+        return unsafe.compareAndSwapObject(this, headOffset, null, update);
+    }
+
+    /**
+     * CAS tail field. Used only by enq.
+     */
+    private final boolean compareAndSetTail(Node expect, Node update) {
+        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+    }
+
+    /**
+     * CAS waitStatus field of a node.
+     */
+    private static final boolean compareAndSetWaitStatus(Node node,
+                                                         int expect,
+                                                         int update) {
+        return unsafe.compareAndSwapInt(node, waitStatusOffset,
+                                        expect, update);
+    }
+
+    /**
+     * CAS next field of a node.
+     */
+    private static final boolean compareAndSetNext(Node node,
+                                                   Node expect,
+                                                   Node update) {
+        return unsafe.compareAndSwapObject(node, nextOffset, expect, update);
+    }
+    
+    
+
+    private static final long serialVersionUID = 7373984972572414691L;
 
 
-##### 13.1.3 两种资源共享方式
+    protected AbstractQueuedSynchronizer() {
+    }
+    
+    
+//================================Node================================================
+    static final class Node {
+        /**
+         * 共享节点模式下的节点
+         */
+        static final Node SHARED = new Node();
+        /**
+         * 独占模式下的节点
+         */
+        static final Node EXCLUSIVE = null;
 
-state就是共享资源，其访问方式有如下三种：
+        /**
+         * 取消状态
+         */
+        static final int CANCELLED = 1;
+        /**
+         * 后继节点的线程处于等待状态，而当前节点的线程如果释放了同步状态或者被取消，将会通知后继节点，使后继节点的线程得以运行
+         */
+        static final int SIGNAL = -1;
+        /**
+         * waitStatus value to indicate thread is waiting on condition
+         */
+        static final int CONDITION = -2;
+        /**
+         * 下一次共享式同步状态获取将会无条件地传播下去
+         */
+        static final int PROPAGATE = -3;
+        volatile int waitStatus;
 
-- getState();
-- setState();
-- compareAndSetState();
+        /**
+         * 前驱节点
+         */
+        volatile Node prev;
 
-AQS 定义了两种资源共享方式：
+        /**
+         * 后驱节点
+         */
+        volatile Node next;
 
-- **Exclusive**：独占，只有一个线程能执行，如ReentrantLock
-- **Share**：共享，多个线程可以同时执行，如Semaphore、CountDownLatch、ReadWriteLock，CyclicBarrier
+        /**
+         * 获取同步状态的线程
+         */
+        volatile Thread thread;
+        Node nextWaiter;
+
+
+        final boolean isShared() {
+            return nextWaiter == SHARED;
+        }
+
+
+		//获取头节点
+        final Node predecessor() throws NullPointerException {
+            Node p = prev;
+            if (p == null)
+                throw new NullPointerException();
+            else
+                return p;
+        }
+
+        Node() {    
+        }
+
+        Node(Thread thread, Node mode) {    
+            this.nextWaiter = mode;
+            this.thread = thread;
+        }
+
+        Node(Thread thread, int waitStatus) {
+            this.waitStatus = waitStatus;
+            this.thread = thread;
+        }
+    }
+
+    private transient volatile Node head;
+
+    private transient volatile Node tail;
+
+
+    private volatile int state;
+
+    protected final int getState() {
+        return state;
+    }
+
+
+    protected final void setState(int newState) {
+        state = newState;
+    }
+
+
+    private void setHead(Node node) {
+        head = node;
+        node.thread = null;
+        node.prev = null;
+    }
+
+    private void doReleaseShared() {
+        for (; ; ) {
+            Node h = head;
+            if (h != null && h != tail) {
+                int ws = h.waitStatus;
+                if (ws == Node.SIGNAL) {
+                    if (!compareAndSetWaitStatus(h, Node.SIGNAL, 0))
+                        continue;            // loop to recheck cases
+                    unparkSuccessor(h);
+                } else if (ws == 0 &&
+                        !compareAndSetWaitStatus(h, 0, Node.PROPAGATE))
+                    continue;                // loop on failed CAS
+            }
+            if (h == head)                   // loop if head changed
+                break;
+        }
+    }
+
+
+  
+    //tryAcquire()：具体实现类尝试获取锁，如果成功就返回true；成功只有两种情况：state == 0 || 当前线程就是持有锁的线程，于是重入锁
+    public final void acquire(int arg) {
+        if (!tryAcquire(arg) &&  //当前线程尝试获取锁,若获取失败就执行&&后面的
+                acquireQueued(addWaiter(Node.EXCLUSIVE), arg)) 
+                 //addWaiter：将当前线程节点添加到等待队列尾
+                 //acquireQueued:使用自旋+CAS，不断判断当前节点是否是头节点 && 调用子实现类tryAcquire方法尝试获取锁，直到成功 
+            selfInterrupt();
+    }
+
+
+   
+    //具体资源的获取交由自定义同步器去实现了
+    //这里之所以没有定义成abstract，是因为独占模式下只用实现tryAcquire-tryRelease，而共享模式下只用实现tryAcquireShared-tryReleaseShared。如果都定义成abstract，那么每个模式也要去实现另一模式下的接口
+
+    protected boolean tryAcquire(int arg) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    //将当前线程添加到等待队列的队尾，并返回当前节点
+    private Node addWaiter(Node mode) {
+        Node node = new Node(Thread.currentThread(), mode);
+        // 将尾节点进行保存
+        Node pred = tail;
+        if (pred != null) {//如果尾节点不为null
+            //将node的pre指向尾结点
+            node.prev = pred;
+            if (compareAndSetTail(pred, node)) {//通过CAS保证，确保节点能够被线程安全的添加
+                //将尾结点指向node，node成为了新的尾结点
+                pred.next = node;
+                return node;
+            }
+        }
+
+        //如果尾节点为null，则通过enq进行入队,enq通过CAS自旋失败重试，一直到tail不为null就成功添加入队
+        enq(node);
+        return node;
+    }
+
+	//入队用CAS自旋
+    private Node enq(final Node node) {
+        //CAS"自旋"，直到成功加入队尾
+        for (; ; ) {
+            //尾节点临时存储
+            Node t = tail;
+            if (t == null) {
+                //如果tail为null，则将
+                if (compareAndSetHead(new Node()))//构造新结点,CAS方式设置为队列首元素,当head==null时更新成功
+                    tail = head;
+            } else {
+                node.prev = t;
+                if (compareAndSetTail(t, node)) {
+                    t.next = node;
+                    return t;
+                }
+            }
+        }
+    }
+
+
+    /**
+       用于在当前获得锁的头节点线程释放锁后，让下一个节点尝试上锁。
+     */
+    final boolean acquireQueued(final Node node, int arg) {
+        boolean failed = true;
+        try {
+            boolean interrupted = false;
+            //正常情况下线程只有获得锁才能跳出循环
+            for (; ; ) {
+                // 获取当前节点的上一个节点
+                final Node p = node.predecessor();
+                //当前节点是头节点下一个节点 && 子类实现类的当前线程成功获取了锁 
+                if (p == head && tryAcquire(arg)) {
+                    //将当前节点设置为头结点，移除之前的头节点
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return interrupted;//正常情况下死循环唯一的出口
+                }
+                // 否则检查前一个节点的状态，看当前获取锁失败的线程是否要挂起
+                if (shouldParkAfterFailedAcquire(p, node) &&//判断是否要阻塞当前线程
+                        parkAndCheckInterrupt())//阻塞当前线程
+                    interrupted = true;
+            }
+        } finally {
+            //如果有异常
+            if (failed)
+                //取消请求，将当前节点从队列中移除
+                cancelAcquire(node);
+        }
+    }
+
+   private void cancelAcquire(Node node) {
+        if (node == null)
+            return;
+
+        node.thread = null;
+
+        Node pred = node.prev;
+        while (pred.waitStatus > 0)
+            node.prev = pred = pred.prev;
+
+        Node predNext = pred.next;
+
+        node.waitStatus = Node.CANCELLED;
+
+        if (node == tail && compareAndSetTail(node, pred)) {
+            compareAndSetNext(pred, predNext, null);
+        } else {
+            int ws;
+            if (pred != head &&
+                ((ws = pred.waitStatus) == Node.SIGNAL ||
+                 (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
+                pred.thread != null) {
+                Node next = node.next;
+                if (next != null && next.waitStatus <= 0)
+                    compareAndSetNext(pred, predNext, next);
+            } else {
+                unparkSuccessor(node);
+            }
+
+            node.next = node; // help GC
+        }
+    }
+    
+    //该方法内部通过调用LockSupport的park方法来阻塞当前线程
+    private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+        int ws = pred.waitStatus;
+        if (ws == Node.SIGNAL) //状态为SIGNAL
+            return true;
+        if (ws > 0) { //状态为CANCELLED,
+            do {
+                node.prev = pred = pred.prev;
+            } while (pred.waitStatus > 0);
+            pred.next = node;
+        } else { //状态为初始化状态(ReentrentLock语境下)
+            compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+        }
+        return false;
+    }
+
+
+    private final boolean parkAndCheckInterrupt() {
+        LockSupport.park(this);
+        return Thread.interrupted();
+    }
+
+
+    static void selfInterrupt() {
+        Thread.currentThread().interrupt();
+    }
+
+    //===================================解锁================================================
+
+  //交给子类实现
+   protected boolean tryRelease(int arg) {
+        throw new UnsupportedOperationException();
+    }
+    
+    
+    
+    public final boolean release(int arg) {
+        if (tryRelease(arg)) { //释放锁，让具体实现类实现
+            Node h = head;
+            //当前队列不为空 && 等待队列不为空
+            if (h != null && h.waitStatus != 0)
+                unparkSuccessor(h);  //唤醒同步队列中被阻塞的线程
+            return true;
+        }
+        return false;
+    }
+
+    //唤醒线程，node是头节点
+    //注意：这里是从尾到头对队列进行遍历，AQS事实上是CLH锁的一个变体，原始的CLH锁是没有这一步的,所以是一种优化措施。
+    //在enq入队方法中，cas和t.next=node是两步操作不是原子性的，导致在利用next指针遍历节点时，可能会出现，新的尾节点前指针已经指向了原来的尾节点，但是t.next=node还没来得及执行。
+    private void unparkSuccessor(Node node) {
+		//等待队列个数
+        int ws = node.waitStatus;
+        if (ws < 0)
+            compareAndSetWaitStatus(node, ws, 0);//赋值为0
+		//如果等待队列不为空，获取头节点下一个节点
+        Node s = node.next;
+        if (s == null || s.waitStatus > 0) {
+            s = null;
+            for (Node t = tail; t != null && t != node; t = t.prev)
+                if (t.waitStatus <= 0)
+                    s = t;
+        }
+        if (s != null)
+            LockSupport.unpark(s.thread);
+    }
+}
+
+```
+
+**具体应用在jvm的13-锁优化里面的Reentranlock笔记里**
+
+
 
 
 
