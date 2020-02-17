@@ -17,6 +17,16 @@ JVM 会在编译时期将 boolean 类型的数据转换为 int，使用 1 来表
 
 
 
+##### 1.1.1 问题
+
+ **short s1 = 1；s1 = s1 + 1；有什么错？那么 short s1 = 1; s1 += 1；呢？有没有错误？** 
+
+对于 short s1 = 1; s1 = s1 + 1; 来说，在 s1 + 1 运算时会自动提升表达式的类型为 int ，那么将 int 型值赋值给 short 型变量，s1 会出现类型转换错误。
+
+对于 short s1 = 1; s1 += 1; 来说，+= 是 Java 语言规定的运算符，Java 编译器会对它进行特殊处理，因此可以正确编译。
+
+
+
 ### 1.2 Java有 5种引用类型（对象类型）
 
 类 
@@ -121,29 +131,94 @@ JRE 是 Java运行时环境。它是运行已编译 Java 程序所需的所有�
 
 
 
+**问题一：Java 中是否可以重写一个 private 或者 static 方法？** 
+
+Java 中 static 方法不能被覆盖，因为方法覆盖是基于运行时动态绑定的，而 static 方法是编译时静态绑定的。static 方法跟类的任何实例都不相关，所以概念上不适用。 
+
+Java 中也不可以覆盖 private 的方法，因为 private 修饰的变量和方法只能在当前类中使用， 如果是其他的类继承当前类是不能访问到 private 变量或方法的，当然也不能覆盖。
+
+> 静态方法补充：
+>
+> 静态的方法可以被继承，但是不能重写。如果父类和子类中存在同样名称和参数的静态方法，那么该子类的方法会把原来继承过来的父类的方法隐藏，而不是重写。通俗的讲就是父类的方法和子类的方法是两个没有关系的方法，具体调用哪一个方法是看是哪个对象的引用；这种父子类方法也不在存在多态的性质。 
+
+
+
+**问题二：构造器是否可以被重写？**
+
+在讲继承的时候我们就知道父类的私有属性和构造方法并不能被继承，所以 Constructor 也就不能被 Override（重写），但是可以 Overload（重载），所以你可以看到一个类中有多个构造函数的情况。
+
+
+
+
+
 # 6 Java 面向对象编程三大特性: 封装 继承 多态
 
-### 10.1 封装
+![](./assets/4.4.png)
 
-封装把一个对象的属性私有化，同时提供一些可以被外界访问的属性的方法，如果属性不想被外界访问，我们大可不必提供方法给外界访问。但是如果一个类没有提供给外界访问的方法，那么这个类也没有什么意义了。
+### 6.1 封装
 
-### 10.2 继承
+通常认为封装是把数据和操作数据的方法封装起来，对数据的访问只能通过已定义的接口。 
 
-继承是使用已存在的类的定义作为基础建立新类的技术，新类的定义可以增加新的数据或新的功能，也可以用父类的功能，但不能选择性地继承父类。通过使用继承我们能够非常方便地复用以前的代码。
+eg:
+
+```java
+public class Person {
+    private String name;
+    private int gender;
+    private int age;
+ 
+    public String getName() {
+        return name;
+    }
+ 
+    public String getGender() {
+        return gender == 0 ? "man" : "woman";
+    }
+ 
+    public void work() {
+        if (18 <= age && age <= 50) {
+            System.out.println(name + " is working very hard!");
+        } else {
+            System.out.println(name + " can't work any more!");
+        }
+    }
+}
+```
+
+
+
+优点：
+
+- 减少耦合：可以独立地开发、测试、优化、使用、理解和修改
+- 减轻维护的负担：可以更容易被程序员理解，并且在调试的时候可以不影响其他模块
+- 有效地调节性能：可以通过剖析确定哪些模块影响了系统的性能
+- 提高软件的可重用性
+- 降低了构建大型系统的风险：即使整个系统不可用，但是这些独立的模块却有可能是可用的
+
+
+
+### 6.2 继承
+
+通过使用继承我们能够非常方便地复用以前的代码。
 
 **关于继承如下 3 点请记住：**
 
 1. 子类拥有父类对象所有的属性和方法（包括私有属性和私有方法），但是父类中的私有属性和方法子类是无法访问，**只是拥有**。
 2. 子类可以拥有自己属性和方法，即子类可以对父类进行扩展。
-3. 子类可以用自己的方式实现父类的方法。（以后介绍）。
-
-### 10.3 多态
-
-所谓多态就是指程序中定义的引用变量所指向的具体类型和通过该引用变量发出的方法调用在编程时并不确定，而是在程序运行期间才确定，即一个引用变量到底会指向哪个类的实例对象，该引用变量发出的方法调用到底是哪个类中实现的方法，必须在由程序运行期间才能决定。
-
-在Java中有两种形式可以实现多态：继承（多个子类对同一方法的重写）和接口（实现接口并覆盖接口中同一方法）。
+3. 子类可以用自己的方式实现父类的方法。（重写） 
 
 
+
+### 6.3 多态
+
+多态：分为**编译时多态（方法重载）**和**运行时多态（方法重写）。**
+
+要实现多态需要做两件事：
+
+- 子类继承父类并重写父类中的方法（重写）
+- 用父类型引用子类型对象(重载)
+
+这样同样的引用调用同样的方法就会根据子类对象的不同而表现出不同的行为。 
 
 
 
@@ -178,7 +253,13 @@ public final class String
 
 value 数组被声明为 final，这意味着 value 数组初始化之后就不能再引用其它数组。并且 String 内部没有改变 value 数组的方法，因此可以保证 String 不可变。
 
- 
+
+
+**String 字符串修改实现的原理？**
+
+当用 String 类型来对字符串进行修改时，其实现方法是首先创建一个 StringBuffer，其次调用 StringBuffer 的 append() 方法，最后调用 StringBuffer 的 toString() 方法把结果返回。
+
+
 
 ### 7.2 不可变的好处
 
@@ -196,7 +277,11 @@ value 数组被声明为 final，这意味着 value 数组初始化之后就不�
 
 **3. 安全性**  
 
-String 经常作为参数，String 不可变性可以保证参数不可变。例如在作为网络连接参数的情况下如果 String 是可变的，那么在网络连接过程中，String 被改变，改变 String 的那一方以为现在连接的是其它主机，而实际情况却不一定是。
+String 经常作为参数，如网络连接地址 URL、文件路径 path、还有反射机制所需要的 String 参数等 ，String 不可变性可以保证参数不可变。
+
+例如在作为网络连接参数的情况下如果 String 是可变的，那么在网络连接过程中，String 被改变，改变 String 的那一方以为现在连接的是其它主机，而实际情况却不一定是。
+
+
 
 **4. 线程安全**  
 
@@ -204,7 +289,7 @@ String 不可变性天生具备线程安全，可以在多个线程中安全地�
 
 
 
-###  7.3 String StringBuffer & StringBuilder 
+###  7.3 String & StringBuffer & StringBuilder 
 
 String 类中使用 final 关键字修饰字符数组来保存字符串，`private　final　char　value[]`，所以 String 对象是不可变的。而StringBuilder 与 StringBuffer 都继承自 AbstractStringBuilder 类，在 AbstractStringBuilder 中也是使用字符数组保存字符串`char[]value` 但是没有用 final 关键字修饰，所以这两种对象都是可变的。
 
@@ -252,6 +337,10 @@ String s=”1”：创建字符串常量时，JVM会首先检查字符串常量�
 ![](./assets/5.2.png)
 
 
+
+**final 修饰 StringBuffer 后还可以 append 吗？**
+
+可以。final 修饰的是一个引用变量，那么这个引用始终只能指向这个对象，但是这个对象内部的属性是可以变化的。
 
 
 
@@ -335,7 +424,12 @@ String s2=new StringBuilder(“13”)
 **equals()** : 它的作用也是判断两个对象是否相等。但它一般有两种使用情况：
 
 - 情况1：类没有覆盖 equals() 方法。则通过 equals() 比较该类的两个对象时，等价于通过“==”比较这两个对象。
+
 - 情况2：类覆盖了 equals() 方法。一般，我们都覆盖 equals() 方法来比较两个对象的内容是否相等；若它们的内容相等，则返回 true (即，认为这两个对象相等)。
+
+  很多类重写了 equals 方法，比如 String、Integer  等把它变成了值比较。
+
+注意：equals 方法不能用于比较基本数据类型的变量。 
 
 **举个例子：**
 
@@ -366,8 +460,6 @@ public class test1 {
 
 
 
-
-
 ### 9.2 equals & hashcode
 
 [博客推荐][https://blog.csdn.net/lijiecao0226/article/details/24609559]
@@ -376,7 +468,11 @@ public class test1 {
 
 ##### 9.2.1 为什么要有 hashCode
 
- 先来试想一个场景，如果你想查找一个集合中是否包含某个对象，那么程序应该怎么写呢？通常的做法是逐一取出每个元素与要查找的对象一一比较，当发现两者进行equals比较结果相等时，则停止查找并返回true，否则，返回false。但是这个做法的一个缺点是当集合中的元素很多时，譬如有一万个元素，那么逐一的比较效率势必下降很快。于是有人发明了一种哈希算法来提高从该集合中查找元素的效率，这种方式将集合分成若干个存储区域（可以看成一个个桶），每个对象可以计算出一个哈希码，可以根据哈希码分组，每组分别对应某个存储区域，这样一个对象根据它的哈希码就可以分到不同的存储区域（不同的桶中）。如下图所示：
+ 个问题应该是有个前提，就是你需要用到  HashMap、HashSet 等 Java 集合，用不到哈希表的话，其实仅仅重写 equals() 方法也可以。而工作中的场景是常常用到  Java 集合，所以 Java 官方建议重写 equals() 就一定要重写 hashCode() 方法。 
+
+对于对象集合的判重，如果一个集合含有  10000 个对象实例，仅仅使用 equals() 方法的话，那么对于一个对象判重就需要比较 10000  次，随着集合规模的增大，时间开销是很大的。但是同时使用哈希表的话，就能快速定位到对象的大概存储位置，并且在定位到大概存储位置后，后续比较过程中，如果两个对象的  hashCode 不相同，也不再需要调用 equals() 方法，从而大大减少了 equals() 比较次数。 
+
+所以从程序实现原理上来讲的话，既需要 equals() 方法，也需要 hashCode() 方法。那么既然重写了 equals()，那么也要重写 hashCode() 方法，以保证两者之间的配合关系。 
 ![](./assets/5.3.png)
 
 实际的使用中，一个对象一般有key和value，可以根据key来计算它的hashCode。假设现在全部的对象都已经根据自己的hashCode值存储在不同的存储区域中了，那么现在查找某个对象（根据对象的key来查找），不需要遍历整个集合了，现在只需要计算要查找对象的key的hashCode，然后找到该hashCode对应的存储区域，在该存储区域中来查找就可以了
@@ -407,11 +503,9 @@ public class test1 {
    2.equals和hashCode需要同时覆盖。
    3.若两个对象equals返回true，则hashCode有必要也返回相同的int数。
 
-4.若两个对象equals返回false，则hashCode不一定返回不同的int数,但为不相等的对象生成不同hashCode值可以提高 哈希表的性能。
-
-5.若两个对象hashCode返回相同int数，则equals不一定返回true。
-
-6.若两个对象hashCode返回不同int数，则equals一定返回false。
+4. 若两个对象equals返回false，则hashCode不一定返回不同的int数,但为不相等的对象生成不同hashCode值可以提高 哈希表的性能。
+5. 若两个对象hashCode返回相同int数，则equals不一定返回true。
+6. 若两个对象hashCode返回不同int数，则equals一定返回false。
 
    7.同一对象在执行期间若已经存储在集合中，则不能修改影响hashCode值的相关信息，否则会导致内存泄露问题。
 
@@ -455,8 +549,8 @@ final关键字主要用在三个地方：变量、方法、类。
 
 **1. 静态变量**  
 
-- 静态变量：又称为类变量，也就是说这个变量属于类的，类所有的实例都共享静态变量，可以直接通过类名来访问它。静态变量在内存中只存在一份。
-- 实例变量：每创建一个实例就会产生一个实例变量，它与该实例同生共死。
+- 静态变量：是被 static 修饰的变量，也称为类变量，它属于类，因此不管创建多少个对象，静态变量在内存中有且仅有一个拷贝；静态变量可以实现让多个对象共享内存。 
+- 实例变量：每创建一个实例就会产生一个实例变量，需要先创建对象，然后通过对象才能访问到它，它与该实例同生共死。
 
 ```java
 public class A {
@@ -500,6 +594,19 @@ public class A {
     }
 }
 ```
+
+**问题一：在一个静态方法内调用一个非静态成员为什么是非法的?**
+
+由于静态方法可以不通过对象进行调用，因此在静态方法里，不能调用其他非静态变量，也不可以访问非静态变量成员。
+
+
+
+**问题二：静态方法和实例方法有何不同？**
+
+1. 在外部调用静态方法时，可以使用"类名.方法名"的方式，也可以使用"对象名.方法名"的方式。而实例方法只有后面这种方式。也就是说，调用静态方法可以无需创建对象。 
+2. 静态方法在访问本类的成员时，只允许访问静态成员（即静态成员变量和静态方法），而不允许访问实例成员变量和实例方法；实例方法则无此限制。
+
+
 
 **3. 静态语句块**  
 
@@ -597,6 +704,22 @@ public InitialOrderTest() {
 
 
 
+**补充：**
+
+**Java 中是否可以重写一个 private 或者 static 方法？** 
+
+Java 中 static 方法不能被覆盖，因为方法覆盖是基于运行时动态绑定的，而 static 方法是编译时静态绑定的。static 方法跟类的任何实例都不相关，所以概念上不适用。 
+
+Java 中也不可以覆盖 private 的方法，因为 private 修饰的变量和方法只能在当前类中使用， 如果是其他的类继承当前类是不能访问到 private 变量或方法的，当然也不能覆盖。
+
+> 静态方法补充：
+>
+> 静态的方法可以被继承，但是不能重写。如果父类和子类中存在同样名称和参数的静态方法，那么该子类的方法会把原来继承过来的父类的方法隐藏，而不是重写。通俗的讲就是父类的方法和子类的方法是两个没有关系的方法，具体调用哪一个方法是看是哪个对象的引用；这种父子类方法也不在存在多态的性质。 
+
+
+
+
+
 ### 11.3 this 
 
 this关键字用于引用类的当前实例。 例如：
@@ -626,7 +749,13 @@ class Manager {
 
 ### 11.4 super
 
-super关键字用于从子类访问父类的变量和方法。 例如：
+（1）访问父类的构造函数：可以使用 super() 函数访问父类的构造函数，从而委托父类完成一些初始化的工作。
+
+（2）访问父类的成员：如果子类重写了父类的某个方法，可以通过使用 super 关键字来引用父类的方法实现。
+
+（3）this 和 super 不能同时出现在一个构造函数里面，因为 this 必然会调用其它的构造函数，其它的构造函数必然也会有 super 语句的存在，所以在同一个构造函数里面有相同的语句，就失去了语句的意义，编译器也不会通过。
+
+
 
 ```java
 public class Super {
@@ -645,7 +774,7 @@ public class Sub extends Super {
 }
 ```
 
-在上面的例子中，Sub 类访问父类成员变量 number 并调用其其父类 Super 的 `showNumber（）` 方法。
+在上面的例子中，Sub 类访问父类成员变量 number 并调用其父类 Super 的 `showNumber（）` 方法。
 
 **使用 this 和 super 要注意的问题：**
 
@@ -745,10 +874,20 @@ System.out.println(InterfaceExample.x);
 
 ### 12.3 比较  
 
+- 抽象类中可以定义构造函数，接口不能定义构造函数； 
+- 抽象类中可以有抽象方法和具体方法，而接口中只能有抽象方法（public abstract）； 
 - 抽象类里的抽象方法必须全部被子类所实现，如果子类不能全部实现父类抽象方法，即如果一个类里有抽象方法，那么该子类只能是抽象类。同样，一个实现接口的时候，如不能全部实现接口方法，那么该类也只能为抽象类。 
 - 从使用上来看，一个类可以实现多个接口，但是不能继承多个抽象类。
-- 接口的字段只能是 static 和 final 类型的，而抽象类的字段没有这种限制。
-- 接口的成员只能是 public 的，而抽象类的成员可以有多种访问权限。
+- 抽象类中的成员权限可以是 public、默认、protected（抽象类中抽象方法就是为了重写，所以不能被 private  修饰），而接口中的成员只可以是 public（方法默认：public abstrat、成员变量默认：public static final）；
+-  抽象类中可以包含静态方法，而接口中不可以包含静态方法； 
+
+**JDK8中的改变：**
+
+1. 在 JDK1.8中，允许在接口中包含带有具体实现的方法，使用 default 修饰，这类方法就是默认方法。
+
+2. 在 JDK1.8 之前接口中不能包含静态方法，JDK1.8 以后可以包含。
+
+   之前不能包含是因为，接口不可以实现方法，只可以定义方法，所以不能使用静态方法（因为静态方法必须实现）。现在可以包含了，只能直接用接口调用静态方法。JDK1.8 仍然不可以包含静态代码块。
 
 
 
@@ -771,80 +910,344 @@ System.out.println(InterfaceExample.x);
 
 
 
+# 13 构造器
 
+**构造器是否可以被重写？**
 
-# 13 面向对象——三大特性
-
-封装，继承，多态
-
-![](./assets/4.4.png)
-
+在讲继承的时候我们就知道父类的私有属性和构造方法并不能被继承，所以 Constructor 也就不能被 Override（重写），但是可以 Overload（重载），所以你可以看到一个类中有多个构造函数的情况。
 
 
 
+ **构造方法有哪些特性**
 
-### 13.1 封装
+（1）名字与类名相同；
 
-利用抽象数据类型将数据和基于数据的操作封装在一起，使其构成一个不可分割的独立实体。
+（2）没有返回值，但不能用 void 声明构造函数；
 
-eg:
+（3）成类的对象时自动执行，无需调用。
+
+
+
+ **定义一个没有参数的构造方法的作用**
+
+Java 程序在执行子类的构造方法之前，如果没有用 super() 来调用父类特定的构造方法，则会调用父类中“没有参数的构造方法”。因此，如果父类中只定义了有参数的构造方法，而在子类的构造方法中又没有用  super() 来调用父类中特定的构造方法，则编译时将发生错误，因为 Java  程序在父类中找不到没有参数的构造方法可供执行。解决办法是：在父类里加上一个不做事且没有参数的构造方法。　
+
+
+
+**一个类的构造方法的作用是什么? 若一个类没有声明构造方法，该程序能正确执行吗? **
+
+主要作用是完成对类对象的初始化工作。可以执行。因为一个类即使没有声明构造方法也会有默认的不带参数的构造方法。
+
+
+
+# 14 面向对象和面向过程的区别
+
+面向对象是向现实世界模型的自然延伸，这是一种“万物皆对象”的编程思想。由执行者变为指挥者，在现实生活中的任何物体都可以归为一类事物，而每一个个体都是一类事物的实例。面向对象的编程是以对象为中心，以消息为驱动。
+
+**区别:** 
+
+（1）编程思路不同：面向过程以实现功能的函数开发为主，而面向对象要首先抽象出类、属性及其方法，然后通过实例化类、执行方法来完成功能。 
+
+（2）封装性：都具有封装性，但是面向过程是封装的是功能，而面向对象封装的是数据和功能。 
+
+（3）面向对象具有继承性和多态性，而面向过程没有继承性和多态性，所以面向对象优势很明显。
+
+
+
+# 15 可变&不可变对象
+
+**什么是不可变对象?好处是什么?**
+
+不可变对象指对象一旦被创建,状态就不能再改变,任何修改都会创建一个新的对象,如 String、Integer及其它包装类.不可变对象最大的好处是线程安全.
+
+
+
+**能否创建一个包含可变对象的不可变对象?**
+
+当然可以,比如final Person[] persons = new Persion[]{}.persons是不可变对象的引用,但其数组中的Person实例却是可变的.这种情况下需要特别谨慎,不要共享可变对象的引用.这种情况下,如果数据需要变化时,就返回原对象的一个拷贝.
+
+
+
+
+# 16 包装类
+
+### 16.1 Integer 和 int 的区别
+
+（1）int 是 Java 的八种基本数据类型之一，而 Integer 是 Java 为 int 类型提供的封装类；
+
+（2）int 型变量的默认值是 0，Integer 变量的默认值是 null，这一点说明 Integer 可以区分出未赋值和值为 0 的区分；
+
+（3）Integer 变量必须实例化后才可以使用，而 int 不需要。
+
+
 
 ```java
-public class Person {
-    private String name;
-    private int gender;
-    private int age;
+Integer i = new Integer(100);
+Integer j = new Integer(100);
+System.out.print(i == j); //false
  
-    public String getName() {
-        return name;
+System.out.println(i.equals(j)); //true
+System.out.println(i.intValue()==j.intValue()); //true
+//上面的两个代码是一样的比较过程，详细可以看下面equals的源码
+
+
+//包装类Integer和基本数据类型int比较时，java会自动拆包装为int
+Integer i = new Integer(100);
+int j = 100；
+System.out.print(i == j); //true
+
+//非new生成的Integer变量指向的是java常量池中的对象，而new Integer()生成的变量指向堆中新建的对象，两者在内存中的地址不同
+Integer i = new Integer(100);
+Integer j = 100;
+System.out.print(i == j); //false
+
+
+//对于两个非new生成的Integer对象，进行比较时，如果两个变量的值在区间-128到127之间，则比较结果为true
+Integer i = 100;
+Integer j = 100;
+System.out.print(i == j); //true
+
+    Integer i = 128;
+    Integer j = 128;
+    System.out.print(i == j); //false
+
+
+```
+
+
+
+源码：
+
+```java
+private final int value;
+ 
+public Integer(int value) {
+    this.value = value;
+}
+ 
+public int intValue() {
+    return value;
+}
+ 
+public boolean equals(Object obj) {
+    if (obj instanceof Integer) {
+        return value == ((Integer)obj).intValue();
     }
- 
-    public String getGender() {
-        return gender == 0 ? "man" : "woman";
+    return false;
+}
+
+public static Integer valueOf(int i){
+    assert IntegerCache.high >= 127;
+    if (i >= IntegerCache.low && i <= IntegerCache.high){
+        return IntegerCache.cache[i + (-IntegerCache.low)];
     }
- 
-    public void work() {
-        if (18 <= age && age <= 50) {
-            System.out.println(name + " is working very hard!");
-        } else {
-            System.out.println(name + " can't work any more!");
-        }
+    return new Integer(i);
+}
+```
+
+
+
+
+
+### 16.2 **包装类的缓存**
+
+Boolean：全部缓存
+
+Byte：全部缓存
+
+Character：<= 127 缓存
+
+Short：-128 — 127 缓存
+
+Long：-128 — 127 缓存
+
+Integer：-128 — 127 缓存
+
+Float：没有缓存
+
+Double：没有缓存
+
+
+
+### 16.3 **装箱和拆箱** 
+
+自动装箱是 Java 编译器在基本数据类型和对应得包装类之间做的一个转化。比如：把 int 转化成 Integer，double 转化成 Double 等等。反之就是自动拆箱。
+
+原始类型：boolean、char、byte、short、int、long、float、double
+
+封装类型：Boolean、Character、Byte、Short、Integer、Long、Float、Double
+
+
+
+# 17 switch
+
+**switch 语句能否作用在 byte 上，能否作用在 long 上，能否作用在 String 上？**
+
+在  switch(expr 1) 中，expr1 只能是一个**整数表达式或者枚举常量**。而整数表达式可以是 **int 基本数据类型或者 Integer  包装类型**。由于，**byte、short、char** 都可以隐式转换为 int，所以，这些类型以及这些类型的包装类型也都是可以的。而 long 和  String 类型都不符合 switch 的语法规定，并且不能被隐式的转换为 int 类型，所以，它们不能作用于 switch 语句中。
+
+不过，需要注意的是在 JDK1.7 版本之后 switch 就可以作用在 String 上了。
+
+
+
+**原理：**
+
+```java
+public class SwitchString {
+    public static void main(String[] args) {
+        switch (args[0]) {
+	    case "A" : break;
+            case "B" : break;
+            default :
+	}//switch
     }
 }
 ```
 
 
 
-优点：
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+ 
+public class SwitchString {
+    public SwitchString() {
+    }
+ 
+    public static void main(String[] var0) {
+        String var1 = var0[0];
+        byte var2 = -1;
+        switch(var1.hashCode()) {
+        case 65:
+            if (var1.equals("A")) {
+                var2 = 0;
+            }
+            break;
+        case 66:
+            if (var1.equals("B")) {
+                var2 = 1;
+            }
+        }
+ 
+        switch(var2) {
+        case 0:
+        case 1:
+        default:
+        }
+    }
+}
+```
 
-- 减少耦合：可以独立地开发、测试、优化、使用、理解和修改
-- 减轻维护的负担：可以更容易被程序员理解，并且在调试的时候可以不影响其他模块
-- 有效地调节性能：可以通过剖析确定哪些模块影响了系统的性能
-- 提高软件的可重用性
-- 降低了构建大型系统的风险：即使整个系统不可用，但是这些独立的模块却有可能是可用的
+jvm是先调用String的hashCode方法得到hash值，然后将case中的常量换掉，再用euqals再次确认。
+
+但是有个很奇怪的地方，为什么在case中，还要再使用String的equals方法呢？这就和String的hashCode计算hash值有关了
+
+```java
+    public int hashCode() {
+        int h = hash;
+        if (h == 0 && value.length > 0) {
+            char val[] = value;
+ 
+            for (int i = 0; i < value.length; i++) {
+                h = 31 * h + val[i];
+            }
+            hash = h;
+        }
+        return h;
+    }
+```
+
+ String的Hash可能会冲突，即两个不同的String可能计算出相同的hash值。
+
+因此JVM才会又用String的equals方法再次比较
 
 
 
-### 13.2 继承
+# 18 Object类
 
-通过使用继承我们能够非常方便地复用以前的代码。
+**Object 的常用方法** 
 
-**关于继承如下 3 点请记住：**
+clone 方法：用于创建并返回当前对象的一份拷贝；
 
-1. 子类拥有父类对象所有的属性和方法（包括私有属性和私有方法），但是父类中的私有属性和方法子类是无法访问，**只是拥有**。
-2. 子类可以拥有自己属性和方法，即子类可以对父类进行扩展。
-3. 子类可以用自己的方式实现父类的方法。
+getClass 方法：用于返回当前运行时对象的 Class；
+
+toString 方法：返回对象的字符串表示形式；
+
+finalize 方法：实例被垃圾回收器回收时触发的方法；
+
+equals 方法：用于比较两个对象的内存地址是否相等，一般需要重写；
+
+hashCode 方法：用于返回对象的哈希值；
+
+notify 方法：唤醒一个在此对象监视器上等待的线程。如果有多个线程在等待只会唤醒一个。
+
+notifyAll 方法：作用跟 notify() 一样，只不过会唤醒在此对象监视器上等待的所有线程，而不是一个线程。
+
+wait 方法：让当前对象等待；
 
 
 
-### 13.2 多态
+**为什么 wait/notify 方法放在 Object 类中而不是 Thread 类** 
 
-所谓多态就是指程序中定义的引用变量所指向的具体类型和通过该引用变量发出的方法调用在编程时并不确定，而是在程序运行期间才确定，即一个引用变量到底会指向哪个类的实例对象，该引用变量发出的方法调用到底是哪个类中实现的方法，必须在由程序运行期间才能决定。
-
-覆盖和重载就是多态的两种实现形式。
+一个很明显的原因是 Java 提供的锁是对象级的而不是线程级的，每个对象都有锁，通过线程获得。如果 wait() 方法定义在 Thread 类中，线程正在等待的是哪个锁就不明显了。
 
 
 
+# 19 位运算
+
+### 19.1 & 和 && 的区别
+
+Java 中 && 和 & 都是表示与的逻辑运算符，都表示逻辑运输符 and，当两边的表达式都为 true 的时候，整个运算结果才为 true，否则为 false。
+
+&&：有短路功能，当第一个表达式的值为 false 的时候，则不再计算第二个表达式；
+
+&：不管第一个表达式结果是否为 true，第二个都会执行。除此之外，& 还可以用作位运算符：当 & 两边的表达式不是 Boolean 类型的时候，& 表示按位操作。
 
 
-[知识点在这里][https://snailclimb.gitee.io/javaguide/#/docs/java/Java%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86]
+
+### 19.2 运算
+
+|是按位或     
+
+^是按位异或(值不一样就是1)     ->  a^b = |a-b| 
+
+&是按位与
+
+eg：
+
+```java
+int x = 5;
+
+int y = 11;
+
+System.out.println(x|y);//15
+
+System.out.println(x&y);//1
+
+System.out.println(x^y);//14
+```
+
+
+
+
+
+# 20 Java 中的参数传递时传还是传引用？
+
+Java 的参数是以值传递的形式传入方法中，而不是引用传递。
+
+当传递方法参数类型为基本数据类型（数字以及布尔值）时，一个方法是不可能修改一个基本数据类型的参数。
+
+当传递方法参数类型为引用数据类型时，一个方法将修改一个引用数据类型的参数所指向对象的值。即使 Java 函数在传递引用数据类型时，也只是拷贝了引用的值罢了，之所以能修改引用数据是因为它们同时指向了一个对象，但这仍然是按值调用而不是引用调用。
+
+
+
+# 21 Math.round(-1.5)等于多少
+
+等于 -1，因为在数轴上取值时，中间值（0.5）向右取整，所以正 0.5 是往上取整，负 0.5 是直接舍弃。
+
+
+
+
+
+[知识点在这里](https://snailclimb.gitee.io/javaguide/#/docs/java/Java%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86)

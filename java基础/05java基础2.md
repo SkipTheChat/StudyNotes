@@ -6,9 +6,16 @@
 
  
 
-Throwable 是 Java 语言中所有错误或异常的超类。Throwable分成了两个不同的分支，一个分支是Error，它表示不希望被程序捕获或者是程序无法处理的错误。另一个分支是Exception，它表示用户程序可能捕捉的异常情况或者说是程序可以处理的异常。其中异常类Exception又分为运行时异常(RuntimeException)和非运行时异常。Java异常又可以分为不受检查异常（Unchecked Exception）和检查异常（Checked Exception）。 
+Throwable 是 Java 语言中所有错误或异常的超类。分为两个分支：
 
-**注意：Error和Exception的区别**：Error通常是灾难性的致命的错误，是程序无法控制和处理的，当出现这些异常时，Java虚拟机（JVM）一般会选择终止线程；Exception通常情况下是可以被程序处理的，并且在程序中应该尽可能的去处理这些异常。 
+- Error，它表示不希望被程序捕获或者是程序无法处理的错误。 一般是指与虚拟机相关的问题，如：系统崩溃、虚拟机错误、内存空间不足、方法调用栈溢出等。这类错误将会导致应用程序中断，仅靠程序本身无法恢复和预防； 
+- Exception，它表示用户程序可能捕捉的异常情况或者说是程序可以处理的异常。其中异常类Exception又分为运行时异常(RuntimeException)和非运行时异常。Java异常又可以分为不受检查异常（Unchecked Exception）和检查异常（Checked Exception）。 
+
+**注意：Error和Exception的区别**：
+
+Error通常是灾难性的致命的错误，是程序无法控制和处理的，当出现这些异常时，Java虚拟机（JVM）一般会选择终止线程；
+
+Exception通常情况下是可以被程序处理的，并且在程序中应该尽可能的去处理这些异常。 
 
 
 
@@ -20,7 +27,9 @@ Error类对象由 Java 虚拟机生成并抛出，大多数错误与代码编写
 
 ##### 1.1.2 Exception
 
- **运行时异常（RuntimeException）：**在Exception分支中有一个重要的子类RuntimeException（运行时异常），该类型的异常自动为你所编写的程序定义ArrayIndexOutOfBoundsException（数组下标越界）、NullPointerExce~ption（空指针异常）、ArithmeticException（算术异常）、MissingResourceException（丢失资源）、ClassNotFoundException（找不到类）等异常，这些异常是不检查异常，程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的，程序应该从逻辑角度尽可能避免这类异常的发生；
+ **运行时异常（RuntimeException）：**如：空指针异常、指定的类找不到、数组越界、方法传递参数错误、数据类型转换错误。可以编译通过，但是一运行就停止了，程序不会自己处理。
+
+这些异常是不检查异常，程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的，程序应该从逻辑角度尽可能避免这类异常的发生；
 
 **非运行时异常：**RuntimeException之外的异常我们统称为非运行时异常，类型上属于Exception类及其子类，从程序语法角度讲是必须进行处理的异常，如果不处理，程序就不能编译通过。如IOException、SQLException等以及用户自定义的Exception异常。
 
@@ -28,7 +37,7 @@ Error类对象由 Java 虚拟机生成并抛出，大多数错误与代码编写
 
 ##### 1.1.3 检查异常&不受检查异常
 
-**检查异常：**除了RuntimeException及其子类以外，其他的Exception类及其子类都属于这种异常，当程序中可能出现这类异常，要么使用try-catch语句进行捕获，要么用throws子句抛出，否则编译无法通过。 
+**检查异常：**除了RuntimeException及其子类以外，其他的Exception类及其子类都属于这种异常，要么用 try … catch… 捕获，要么用 throws 声明抛出，交给父类处理。 
 
 **不受检查异常：**包括RuntimeException及其子类和Error。 
 
@@ -48,43 +57,71 @@ Error类对象由 Java 虚拟机生成并抛出，大多数错误与代码编写
 
 ##### 1.2.1 Throw 和 throws 的区别
 
-位置不同 ：
+（1）throw：在方法体内部，表示抛出异常，由方法体内部的语句处理；throw 是具体向外抛出异常的动作，所以它抛出的是一个异常实例；
 
-1. throws 用在函数上，后面跟的是异常类，可以跟多个；而 throw 用在函数内，后面跟的是异常对象。 
+（2）throws：在方法声明后面，表示如果抛出异常，由该方法的调用者来进行异常的处理；表示出现异常的可能性，并不一定会发生这种异常。
 
-功能不同 ：
 
-2. throws 用来声明异常，让调用者只知道该功能可能出现的问题，可以给出预先的处理方式；throw 抛出具体的问题对象，执行到 throw，功能就已经结束了，跳转到调用者，并 将具体的问题对象抛给调用者。也就是说 throw 语句独立存在时，下面不要定义其他语句，因为执行不到。 
 
-3. throws 表示出现异常的一种可能性，并不一定会发生这些异常；throw 则是抛出了异常，执行 throw 则一定抛出了某种异常对象
+**主线程可以捕获到子线程的异常吗？**
 
-4. 两者都是消极处理异常的方式，只是抛出或者可能抛出异常，但是不会由函数去处理异常，真正的处理异常由函数的上层调用处理。
+线程设计的理念：“线程的问题应该线程自己本身来解决，而不要委托到外部”。
+
+正常情况下，如果不做特殊的处理，在主线程中是不能够捕获到子线程中的异常的。如果想要在主线程中捕获子线程的异常，我们可以用如下的方式进行处理，使用 Thread 的静态方法。
+
+```java
+Thread.setDefaultUncaughtExceptionHandler(new MyUncaughtExceptionHandle());
+```
+
+
 
 
 
 ### 1.3 finally
 
-##### 1.3.1 finally和return执行顺序
-
 [可以看这篇博客][https://blog.csdn.net/jdfk423/article/details/80406297]
 
-总结：
+**finally和return执行顺序**
 
-- 当finaly没有返回值时，try和catch中有return时，finally里面的语句会被先执行。
-- 当finally有返回值时，会直接返回。不会再去返回try或者catch中的返回值。
-- finally中对于try中返回变量做的改变不会影响最终的返回结果。
+在  Java 语言的异常处理中，finally 块的作用就是为了保证无论出现什么情况，finally 块里的代码一定会被执行。由于程序执行  return 就意味着结束对当前函数的调用并跳出这个函数体，因此任何语句要执行都只能在 return 前执行（除非碰到 exit 函数），**因此 finally 块里的代码也是在 return 之前执行的。**
 
-
+此外，如果 try-finally 或者 catch-finally 中都有 return，那么 **finally 块中的 return 将会覆盖别处的 return 语句**，最终返回到调用者那里的是 finally 中 return 的值。
 
 
 
-##### 1.3.2 final、finally、finalize的区别
+
+
+ **final、finally、finalize的区别**
 
 （1）final用于声明变量、方法和类的，分别表示变量值不可变，方法不可覆盖，类不可以继承
 
 （2）finally是异常处理中的一个关键字，表示finally{}里面的代码一定要执行
 
 （3）finalize是Object类的一个方法，在垃圾回收的时候会调用被回收对象的此方法。
+
+
+
+**finally 是不是一定会被执行到？**
+
+不一定。下面列举两种执行不到的情况：
+
+（1）当程序进入 try 块之前就出现异常时，会直接结束，不会执行 finally 块中的代码；
+
+（2）当程序在 try 块中强制退出时也不会去执行 finally 块中的代码，比如在 try 块中执行 exit 方法。
+
+
+
+**try-catch-finally 中，如果 catch 中 return 了，finally 还会执行吗？**
+
+会。程序在执行到  return 时会首先将返回值存储在一个指定的位置，其次去执行 finally 块，最后再返回。因此，对基本数据类型，在 finally  块中改变 return 的值没有任何影响，直接覆盖掉；而对引用类型是有影响的，返回的是在 finally 对 前面 return  语句返回对象的修改值。
+
+
+
+**try-catch-finally 中那个部分可以省略？**
+
+catch  可以省略。try 只适合处理运行时异常，try+catch 适合处理运行时异常+普通异常。也就是说，如果你只用 try 去处理普通异常却不加以  catch 处理，编译是通不过的，因为编译器硬性规定，普通异常如果选择捕获，则必须用 catch  显示声明以便进一步处理。而运行时异常在编译时没有如此规定，所以 catch 可以省略，你加上 catch 编译器也觉得无可厚非。
+
+
 
 
 
@@ -220,6 +257,12 @@ public class Fanshe {
 
 
 ### 2.6 反射过程&原理
+
+每个类都有一个  Class 对象，包含了与类有关的信息。当编译一个新类时，会产生一个同名的 .class 文件，该文件内容保存着 Class  对象。类加载相当于 Class 对象的加载，类在第一次使用时才动态加载到 JVM 中。也可以使用  Class.forName("com.mysql.jdbc.Driver") 这种方式来控制类的加载，该方法会返回一个 Class 对象。
+
+**Class 和 java.lang.reflect 一起对反射提供了支持。**
+
+**过程：**
 
 1. 当 Student 类 new 一个对象的时候，会通知 JVM 去本地加载 Student.class 这个二进制文件；
 2. JVM 在本地磁盘寻找这个文件，找到之后就把它加载到 JVM 内存中，在加载的同时会生成一个对象来映射这个 class 文件，该对象中存储着 Student.class 的信息，包括字段、方法等，将该对象放在 JVM 的一块内存空间中；
@@ -587,20 +630,32 @@ public class GenericRestrict2 {
 
 ### 4.6 通配符类型
 
-1.`<? extends T>` 指定了泛型类型的上届,表示参数化类型的可能是T 或是 T的子类。 
-2.`<? super T>` 指定了泛型类型的下届,表示参数化类型是此类型的超类型（父类型），直至Object。 
+1.`<? extends T>` 指定了泛型类型的上界,表示参数化类型的可能是T 或是 T的子类。 例如 List<? extends Number> 可以接受 List<Integer> 或 List<Float>。 
+2.`<? super T>` 指定了泛型类型的下界,表示参数化类型是此类型的超类型（父类型），直至Object。 
 
 3.`<?>` 指定了没有限制的泛型类型
 
- 
+**补充：**
+
+Array 不支持泛型，要用 List 代替 Array，因为 List 可以提供编译器的类型安全保证，而 Array却不能。 
+
+
 
 ### 4.7 虚拟机是如何实现泛型的
 
-Java 中的泛型基本上都是在编译器这个层次来实现的。在生成的 Java 字节代码中是不包含泛型中的类型信息的。使用泛型的时候加上的类型参数，会被编译器在编译的时候去掉。这个过程就称为类型擦除。
+Java 中的泛型基本上都是在编译器这个层次来实现的。在生成的 Java 字节代码中是不包含泛型中的类型信息的。使用泛型的时候加上的类型参数，会被编译器在编译的时候去掉。这个过程就称为**类型擦除**。
 
 如在代码中定义的 List<Object>和 List<String>等类型，在编译之后 都会变成 List。JVM 看到的只是 List，而由泛型附加的类型信息对 JVM 来说是不可见的。 类型擦除的基本过程也比较简单，首先是找到用来替换类型参数的具体类。这个具体类一般 是 Object。如果指定了类型参数的上界的话，则使用这个上界。把代码中的类型参数都替换成具体的类.
 
- 
+ **补充：**
+
+```java
+List<String> list = new ArrayList<String>();
+```
+
+1、两个 String 其实只有第一个起作用，后面一个没什么卵用，只不过 JDK7 才开始支持 List<String>list = new ArrayList<> 这种写法。
+
+2、第一个 String 就是告诉编译器，List 中存储的是 String 对象，也就是起**类型检查的作用**，之后编译器会擦除泛型占位符，以保证兼容以前的代码。
 
  
 
@@ -608,8 +663,9 @@ Java 中的泛型基本上都是在编译器这个层次来实现的。在生成
 
 ### 5.1 定义
 
-序列化：把对象转换为字节序列的过程称为对象的序列化；
-反序列化：把字节序列恢复为对象的过程称为对象的反序列化。
+- 序列化：把对象转换为字节序列的过程称为对象的序列化；可以将其保存到磁盘文件中或通过网络发送到任何其他程序。
+
+- 反序列化：把字节序列恢复为对象的过程称为对象的反序列化。
 
 
 
@@ -663,7 +719,15 @@ Java 中的泛型基本上都是在编译器这个层次来实现的。在生成
 
 
 
-### 5.5 总结
+### 5.5 transient 关键字
+
+对于不想进行序列化的变量，使用 transient 关键字修饰。
+
+transient 关键字的作用是：阻止实例中那些用此关键字修饰的的变量序列化。当对象被反序列化时，被 transient 修饰的变量值不会被持久化和恢复。transient 只能修饰变量，不能修饰类和方法。
+
+
+
+### 5.6 总结
 
 1. 所有需要网络传输的对象都需要实现序列化接口，通过建议所有的javaBean都实现Serializable接口。
 2. 对象的类名、实例变量（包括基本类型，数组，对其他对象的引用）都会被序列化；方法、类变量、transient实例变量都不会被序列化。
@@ -754,6 +818,8 @@ Java 将内存空间分为堆和栈。基本类型直接在栈中存储数值，
 
 ### 6.4 浅拷贝
 
+浅克隆只是复制了对象的引用地址，两个对象指向同一个内存地址，所以修改其中任意的值，另一个值都会随之变化，这就是浅克隆。 
+
 **注意：**调用对象的 clone 方法，必须要让类实现 Cloneable 接口，并且覆写 clone 方法。
 
 ```java
@@ -778,6 +844,8 @@ Java 将内存空间分为堆和栈。基本类型直接在栈中存储数值，
 
 
 ### 6.5 深拷贝
+
+深拷贝是将对象及值复制过来，两个对象修改其中任意的值另一个值不会改变，（例：JSON.parse() 和 JSON.stringify()，但是此方法无法复制函数类型）。 
 
 创建一个新对象：
 
@@ -1029,3 +1097,172 @@ throws ClassFormatError
 从上面的代码我们看出此方法被定义为了final，这也就意味着此方法不能被Override，其实这也是jvm留给我们的唯一的入口，通过这个唯  一的入口，jvm保证了类文件必须符合Java虚拟机规范规定的类的定义。此方法最后会调用native的方法来实现真正的类的加载工作。 
 
 ![](./assets/5.5.png)
+
+
+
+# 8 动态代理
+
+动态代理：当想要给实现了某个接口的类中的方法，加一些额外的处理。比如说加日志，加事务等。可以给这个类创建一个代理，故名思议就是创建一个新的类，这个类不仅包含原来类方法的功能，而且还在原来的基础上添加了额外处理的新功能。这个代理类并不是定义好的，是动态生成的。具有解耦意义，灵活，扩展性强。
+
+动态代理的应用：Spring 的 AOP 、加事务、加权限、加日志。
+
+
+
+怎么实现动态代理？
+
+首先必须定义一个接口，还要有一个  InvocationHandler（将实现接口的类的对象传递给它）处理类。再有一个工具类 Proxy（习惯性将其称为代理类，因为调用它的  newInstance() 可以产生代理对象，其实它只是一个产生代理对象的工具类）。利用到  InvocationHandler，拼接代理类源码，将其编译生成代理类的二进制码，利用加载器加载，并将其实例化产生代理对象，最后返回。
+
+每一个动态代理类都必须要实现  InvocationHandler 这个接口，并且每个代理类的实例都关联到了一个  handler，当我们通过代理对象调用一个方法的时候，这个方法的调用就会被转发为由 InvocationHandler 这个接口的 invoke  方法来进行调用。我们来看看 InvocationHandler 这个接口的唯一一个方法 invoke 方法：
+
+```
+Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+```
+
+proxy: 指代我们所代理的那个真实对象
+
+method: 指代的是我们所要调用真实对象的某个方法的 Method 对象
+
+args: 指代的是调用真实对象某个方法时接受的参数
+
+Proxy 类的作用是动态创建一个代理对象的类。它提供了许多的方法，但是我们用的最多的就是 newProxyInstance 这个方法：
+
+```
+publicstaticObject newProxyInstance(ClassLoader loader, Class<?>[] interfaces, InvocationHandler handler) throws IllegalArgumentException
+```
+
+loader：一个 ClassLoader 对象，定义了由哪个 ClassLoader 对象来对生成的代理对象进行加载；
+
+interfaces：一个 Interface 对象的数组，表示的是我将要给我需要代理的对象提供一组什么接口，如果我提供了一组接口给它，那么这个代理对象就宣称实现了该接口(多态)，这样我就能调用这组接口中的方法了 
+
+handler：一个 InvocationHandler 对象，表示的是当我这个动态代理对象在调用方法的时候，会关联到哪一个 InvocationHandler 对象上。
+
+通过 Proxy.newProxyInstance 创建的代理对象是在 Jvm 运行时动态生成的一个对象，它并不是我们的 InvocationHandler 类型，也不是我们定义的那组接口的类型，而是在运行是动态生成的一个对象。
+
+
+
+# 9 IO流
+
+### 9.1 种类 
+
+* 按功能来分：输入流（input）、输出流（output）。
+  * 输入流是指程序从数据源中读取数据。只进行读操作；
+  * 输出流是指将数据从程序中写到指定的文件中；
+* 按类型来分：字节流 和 字符流。
+
+字节流：InputStream/OutputStream 是字节流的抽象类，这两个抽象类又派生了若干子类，不同的子类分别处理不同的操作类型。具体子类如下所示：
+
+![img](./assets/2.7.png)
+
+字符流：Reader/Writer 是字符的抽象类，这两个抽象类也派生了若干子类，不同的子类分别处理不同的操作类型。
+
+![img](./assets/2.8.png)
+
+
+
+**字节流和字符流有什么区别？**
+
+字节流按 8 位传输，以字节为单位输入输出数据，字符流按 16 位传输，以字符为单位输入输出数据。（中文对应的字节数是两个，在UTF-8码表中是3个字节） 
+
+但是不管文件读写还是网络发送接收，信息的最小存储单元都是字节。
+
+> 字节流可以处理所有类型数据，如：图片，MP3，AVI视频文件，而字符流只能处理字符数据。
+>
+> 只要是处理纯文本数据，就要优先考虑使用字符流，除此之外都用字节流。 
+
+
+
+
+
+处理流类型：
+ 1、缓冲流（BufferedInPutStream/BufferedOutPutStream和BufferedWriter/BufferedReader）他可以提高对流的操作效率。
+
+```java
+ //写入缓冲区对象：   
+BufferedWriter bufw=new BufferedWriter(new FileWriter("buf.txt"));
+//读取缓冲区对象：    
+BufferedReader bufr=new BufferedReader(new FileReader("buf.txt"));
+```
+
+该类型的流有一个特有的方法：readLine()；一次读一行，到行标记时，将行标记之前的字符数据作为字符串返回，当读到末尾时，返回null，其原理还是与缓冲区关联的流对象的read方法，只不过每一次读取到一个字符，先不进行具体操作，先进行临时储存，当读取到回车标记时，将临时容器中储存的数据一次性返回。
+
+
+
+2、转换流（InputStreamReader/OutputStreamWriter）
+      该类型时字节流和字符流之间的桥梁，该流对象中可以对读取到的字节数据进行指定编码的编码转换。
+      构造函数主要有：    
+
+```java
+InputStreamReader(InputStream);        //通过构造函数初始化，使用的是本系统默认的编码表GBK。
+InputStreamWriter(InputStream,String charSet);   //通过该构造函数初始化，可以指定编码表。
+OutputStreamWriter(OutputStream);      //通过该构造函数初始化，使用的是本系统默认的编码表GBK。
+OutputStreamwriter(OutputStream,String charSet);   //通过该构造函数初始化，可以指定编码表。
+
+InputStreamReader isr=new InputStreamReader(new FileInputStream("a.txt"),utf-8);
+```
+
+ 
+
+3、数据流（DataInputStream/DataOutputStream）
+该数据流可以方便地对一些基本类型数据进行直接的存储和读取，不需要再进一步进行转换，通常只要操作基本数据类型的数据，就需要通过DataStream进行包装。
+构造方法：        
+
+`DataInputStreamReader（InputStream）；`
+`DataInputStreamWriter（OutputStream）`
+
+方法举例： 
+
+```java
+ int readInt()；//一次读取四个字节，并将其转成int值
+writeInt(int)；//一次写入四个字节，注意和write(int)不同，write(int)只将该整数的最低一个8位写入，剩余三个8为丢失
+     
+hort readShort();
+writeShort(short);
+ String readUTF();//按照utf-8修改版读取字符，注意，它只能读writeUTF()写入的字符数据。
+writeUTF(String);//按照utf-8修改版将字符数据进行存储，只能通过readUTF读取。
+```
+
+ 
+
+4、打印流（PrintStream/PrintWriter）
+
+- PrintStream是一个字节打印流，System.out对应的类型就是PrintStream，它的构造函数可以接受三种数据类型的值：1.字符串路径。2.File对象 3.OutputStream
+
+-  PrintWriter是一个字符打印流，它的构造函数可以接受四种类型的值：1.字符串路径。2.File对象 3.OutputStream  4.Writer  对于1、2类型的数据，可以指定编码表，也就是字符集，对于3、4类型的数据，可以指定自动刷新，当该自动刷新为True时，只有3个方法可以用：println,printf,format。
+
+
+
+5、对象流（ObjectInputStream/ObjectOutputStream）
+该类型的流可以把类作为一个整体进行存取，主要方法有：
+
+-  Object readObject();该方法抛出异常：ClassNotFountException。
+- void writeObject(Object)：被写入的对象必须实现一个接口：Serializable，否则就会抛出：NotSerializableException
+
+​     
+
+
+
+### 9.2 BIO & NIO & AIO
+
+##### 9.2.1 BIO
+
+BIO：Block  IO 同步阻塞式 IO，就是我们平常使用的传统  IO，它的特点是模式简单使用方便，并发处理能力低。同步阻塞I/O模式，数据的读取写入必须阻塞在一个线程内等待其完成。在活动连接数不是特别高（小于单机  1000）的情况下，这种模型是比较不错的，可以让每一个连接专注于自己的 I/O  并且编程模型简单，也不用过多考虑系统的过载、限流等问题。线程池本身就是一个天然的漏斗，可以缓冲一些系统处理不了的连接或请求。但是，当面对十万甚至百万级连接的时候，传统的  BIO 模型是无能为力的。因此，我们需要一种更高效的 I/O 处理模型来应对更高的并发量。
+
+
+
+##### 9.2.2 NIO
+
+[博客](https://blog.csdn.net/a953713428/article/details/64907250)
+
+New  IO 同步非阻塞 IO，是传统 IO 的升级，客户端和服务器端通过 Channel（通道）通讯，实现了多路复用。NIO  是一种同步非阻塞的   I/O 模型，在 Java1.4 中引入了 NIO 框架，对应 java.nio 包，提供了 Channel ,  Selector，Buffer 等抽象。NIO 中的 N 可以理解为 Non-blocking，不单纯是 New。它支持面向缓冲的，基于通道的  I/O 操作方法。NIO 提供了与传统BIO模型中的 Socket 和 ServerSocket 相对应的 SocketChannel 和  ServerSocketChannel  两种不同的套接字通道实现，两种通道都支持阻塞和非阻塞两种模式。阻塞模式使用就像传统中的支持一样，比较简单，但是性能和可靠性都不好；非阻塞模式正好与之相反。对于低负载、低并发的应用程序，可以使用同步阻塞  I/O 来提升开发速率和更好的维护性；对于高负载、高并发的（网络）应用，应使用 NIO 的非阻塞模式来开发。
+
+##### 9.2.3 AIO
+
+Asynchronous  IO 是 NIO 的升级，也叫 NIO2，实现了异步非堵塞 IO ，异步 IO  的操作基于事件和回调机制。也就是应用操作之后会直接返回，不会堵塞在那里，当后台处理完成，操作系统会通知相应的线程进行后续的操作。AIO 是异步  IO 的缩写，虽然 NIO 在网络操作中，提供了非阻塞的方法，但是 NIO 的 IO 行为还是同步的。对于 NIO 来说，我们的业务线程是在  IO 操作准备好时，得到通知，接着就由这个线程自行进行 IO 操作，IO操作本身是同步的。
+
+
+
+
+
+# 10 Collections 工具类和 Arrays 工具类常见方法总结
+
+[博客](https://gitee.com/SnailClimb/JavaGuide/blob/master/docs/java/Basis/Arrays,CollectionsCommonMethods.md)
