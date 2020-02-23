@@ -13,6 +13,8 @@
 | char    | 文本型 | 2byte     | 0~216-1                       |
 | boolean | 布尔型 | 1byte     | true/false                    |
 
+byte-boolean   int-char  short-float long-double
+
 JVM 会在编译时期将 boolean 类型的数据转换为 int，使用 1 来表示 true，0 表示 false。JVM 支持 boolean 数组，但是是通过读写 byte 数组来实现的。
 
 
@@ -43,54 +45,25 @@ JVM 会在编译时期将 boolean 类型的数据转换为 int，使用 1 来表
 
 
 
-# 2 关于 JVM JDK 和 JRE 最详细通俗的解答
+# 2 JDK 和 JRE
 
-### 4.1 JVM
+JRE： Java Runtime Environment   
 
-Java虚拟机（JVM）是运行 Java 字节码的虚拟机。JVM有针对不同系统的特定实现（Windows，Linux，macOS），目的是使用相同的字节码，它们都会给出相同的结果。
-
-
-
-**什么是字节码?采用字节码的好处是什么?**
-
-> 在 Java 中，JVM可以理解的代码就叫做`字节码`（即扩展名为 `.class`  的文件），它不面向任何特定的处理器，只面向虚拟机。Java  语言通过字节码的方式，在一定程度上解决了传统解释型语言执行效率低的问题，同时又保留了解释型语言可移植的特点。所以 Java  程序运行时比较高效，而且，由于字节码并不针对一种特定的机器，因此，Java程序无须重新编译便可在多种不同操作系统的计算机上运行。
->
-> 
-
-**Java 程序从源代码到运行一般有下面3步：**
-
-![Java程序运行过程](https://my-blog-to-use.oss-cn-beijing.aliyuncs.com/Java%20%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E8%BF%87%E7%A8%8B.png)
-
-我们需要格外注意的是  .class->机器码 这一步。在这一步 JVM  类加载器首先加载字节码文件，然后通过解释器逐行解释执行，这种方式的执行速度会相对比较慢。而且，有些方法和代码块是经常需要被调用的(也就是所谓的热点代码)，所以后面引进了  JIT 编译器，而JIT 属于运行时编译。当 JIT  编译器完成第一次编译后，其会将字节码对应的机器码保存下来，下次可以直接使用。而我们知道，机器码的运行效率肯定是高于 Java  解释器的。这也解释了我们为什么经常会说 Java 是编译与解释共存的语言。
+JRE顾名思义是java运行时环境，包含了java虚拟机，java基础类库。是使用java语言编写的程序运行所需要的软件环境，如果只是想运行一下程序有jre就够了。
 
 
 
-> HotSpot采用了惰性评估(Lazy  Evaluation)的做法，根据二八定律，消耗大部分系统资源的只有那一小部分的代码（热点代码），而这也就是JIT所需要编译的部分。JVM会根据代码每次被执行的情况收集信息并相应地做出一些优化，因此执行的次数越多，它的速度就越快。JDK  9引入了一种新的编译模式AOT(Ahead of Time  Compilation)，它是直接将字节码编译成机器码，这样就避免了JIT预热等各方面的开销。JDK支持分层编译和AOT协作使用。但是 ，AOT 编译器的编译质量是肯定比不上 JIT 编译器的。
+JDK：Java Development Kit  
 
-
-
-**总结：**
-
-Java虚拟机（JVM）是运行 Java  字节码的虚拟机。JVM有针对不同系统的特定实现（Windows，Linux，macOS），目的是使用相同的字节码，它们都会给出相同的结果。字节码和不同系统的  JVM  实现是 Java 语言“一次编译，随处可以运行”的关键所在。 
-
-
-
-### 4.2 JDK 和 JRE
-
-JDK是Java Development Kit，它是功能齐全的Java SDK。它拥有JRE所拥有的一切，还有编译器（javac）和工具（如javadoc和jdb）。它能够创建和编译程序。
-
-JRE 是 Java运行时环境。它是运行已编译 Java 程序所需的所有内容的集合，包括 Java虚拟机（JVM），Java类库，java命令和其他的一些基础构件。但是，它不能用于创建新程序。
-
-如果你只是为了运行一下  Java 程序的话，那么你只需要安装 JRE 就可以了。如果你需要进行一些 Java  编程方面的工作，那么你就需要安装JDK了。但是，这不是绝对的。有时，即使您不打算在计算机上进行任何Java开发，仍然需要安装JDK。例如，如果要使用JSP部署Web应用程序，那么从技术上讲，您只是在应用程序服务器中运行Java程序。那你为什么需要JDK呢？因为应用程序服务器会将  JSP 转换为 Java servlet，并且需要使用 JDK 来编译 servlet。
+ JDK顾名思义是java开发工具包，是程序员使用java语言编写java程序所需的开发工具包，是提供给程序员使用的。JDK包含了JRE，同时还包含了编译java源码的编译器javac，还包含了很多java程序调试和分析的工具：jconsole，jvisualvm等工具软件，还包含了java程序编写所需的文档和demo例子程序。 
 
 
 
 # 3 Java和C++的区别
 
 - 都是面向对象的语言，都支持封装、继承和多态
-- Java 不提供指针来直接访问内存，程序内存更加安全
+- Java 不提供指针来直接访问内存，自动内存管理机制，不需要程序员手动释放无用内存，程序内存更加安全
 - Java 的类是单继承的，C++ 支持多重继承；虽然 Java 的类不可以多继承，但是接口可以多继承。
-- Java 有自动内存管理机制，不需要程序员手动释放无用内存
 - **在 C 语言中，字符串或字符数组最后都会有一个额外的字符‘\0’来表示结束。但是，Java 语言中没有结束符这一概念。** 这是一个值得深度思考的问题，具体原因推荐看这篇文章： <https://blog.csdn.net/sszgg2006/article/details/49148189> 。
 
 
@@ -144,6 +117,8 @@ Java 中也不可以覆盖 private 的方法，因为 private 修饰的变量和
 
 
 **问题二：构造器是否可以被重写？**
+
+构造器是在类加载过程的初始化阶段触发的。重写是基于动态分派的。
 
 在讲继承的时候我们就知道父类的私有属性和构造方法并不能被继承，所以 Constructor 也就不能被 Override（重写），但是可以 Overload（重载），所以你可以看到一个类中有多个构造函数的情况。
 
@@ -215,10 +190,138 @@ public class Person {
 
 要实现多态需要做两件事：
 
-- 子类继承父类并重写父类中的方法（重写）
-- 用父类型引用子类型对象(重载)
+- 子类继承父类并重写父类中的方法（重写-动态调用）
+- 用父类型引用子类型对象(重载-静态调用)
 
 这样同样的引用调用同样的方法就会根据子类对象的不同而表现出不同的行为。 
+
+
+
+**编译时多态（方法重载）**：在编译完后就已经确定了对象的类型。
+
+**运行时多态（方法重写）**：运行时才确定方法的类型。
+
+方法重写原理：[博客](https://www.cnblogs.com/kaleidoscope/p/9790766.html)
+
+在类的方法区中建立一个虚方法表。使用虚方法表索引来代替元数据查找以提高性能。其原理与C++的虚函数表类似。
+
+虚方法表中存放的是各个方法的实际入口地址。如果某个方法在子类中没有被重写，那子类的虚方法表里面的地址入口和父类中该方法相同，都指向父类的实现入口。虚方法表一般在类加载的连接阶段进行初始化。
+
+
+
+JVM 的方法调用指令有四个，分别是 invokestatic，invokespecial，invokesvirtual 和 invokeinterface。前两个是静态绑定，后两个是动态绑定的。 
+
+
+
+重载示例：
+
+```java
+class Human{  
+}    
+class Man extends Human{  
+}  
+class Woman extends Human{  
+}  
+
+public class StaticPai{  
+
+    public void say(Human hum){  
+        System.out.println("I am human");  
+    }  
+    public void say(Man hum){  
+        System.out.println("I am man");  
+    }  
+    public void say(Woman hum){  
+        System.out.println("I am woman");  
+    }  
+
+    public static void main(String[] args){  
+        Human man = new Man();  
+        Human woman = new Woman();  
+        StaticPai sp = new StaticPai();  
+        sp.say(man);  
+        sp.say(woman);  
+    }  
+}  
+```
+
+```
+ I am human
+ I am human
+```
+
+
+
+运行时多态调用示例：
+
+```java
+class Person {
+    public String toString() {
+        return "I'm a person.";
+    }
+ 
+    public void eat() {
+    }
+ 
+    public void speak() {
+    }
+ 
+}
+ 
+class Boy extends Person {
+    public String toString() {
+        return "I'm a boy";
+    }
+ 
+    public void speak() {
+    }
+ 
+    public void fight() {
+    }
+}
+ 
+class Girl extends Person {
+    public String toString() {
+        return "I'm a girl";
+    }
+ 
+    public void speak() {
+    }
+ 
+    public void sing() {
+    }
+}
+```
+
+
+
+![](./assets/4.5.png)
+
+
+
+ 可以看到，Girl 和 Boy 的方法表包含继承自 Object 的方法，继承自直接父类 Person  的方法及各自新定义的方法。注意方法表条目指向的具体的方法地址，如 Girl 继承自 Object 的方法中，只有 toString() 指向自己的实现（Girl 的方法代码），其余皆指向 Object 的方法代码；其继承自于 Person 的方法 eat() 和 speak() 分别指向 Person 的方法实现和本身的实现。
+
+ **如果子类改写了父类的方法，那么子类和父类的那些同名的方法共享一个方法表项。**
+
+ 因此，方法表的偏移量总是固定的。所有继承父类的子类的方法表中，其父类所定义的方法的偏移量也总是一个定值。
+ Person 或 Object中的任意一个方法，在它们的方法表和其子类 Girl 和 Boy 的方法表中的位置 (index) 是一样的。这样 JVM 在调用实例方法其实只需要指定调用方法表中的第几个方法即可。
+
+ 如调用如下:
+
+```java
+lass Party {
+    void happyHour() {
+        Person girl = new Girl();
+        girl.speak();
+    }
+}
+```
+
+
+
+![](./assets/4.6.png)
+
+
 
 
 
@@ -251,7 +354,7 @@ public final class String
 }
 ```
 
-value 数组被声明为 final，这意味着 value 数组初始化之后就不能再引用其它数组。并且 String 内部没有改变 value 数组的方法，因此可以保证 String 不可变。
+value 数组被声明为 final，这意味着 value 数组初始化之后就不能再引用其它数组。并且 String 内部没有改变 value 数组的方法，因此可以保证 String 不可变。 
 
 
 
@@ -328,13 +431,13 @@ String  中的对象是不可变的，也就可以理解为常量，线程安全
 
 ### 7.4 String Pool
 
+字符串常量池（String Pool）保存着所有字符串字面量（literal strings），这些字面量在编译时期就确定。
+
 ##### 7.4.1 内存图
 
-String s=”1”：创建字符串常量时，JVM会首先检查字符串常量池，如果该字符串已经存在常量池中，那么就将此字符串对象的地址赋值给引用s（引用s在Java栈中）。如果字符串不存在常量池中，就会实例化该字符串并且将其放到常量池中，并将此字符串对象的地址赋值给引用s（引用s在Java栈中）。
+String s=”1”：此创建方法会在String constant pool中创建对象。jvm会首先在String constant pool 中寻找是否已经存在"abc"常量，如果没有则创建该常量，并且将此常量的引用返回给String  a；如果已有"abc" 常量，则直接返回String constant pool 中“abc” 的引用给String a。
 
- String s=new String(”1”)：创建字符串常量时，JVM会首先检查字符串常量池，如果该字符串已经存在常量池中，那么不再在字符串常量池创建该字符串对象，而直接堆中复制该对象的副本，然后将堆中对象的地址赋值给引用s，如果字符串不存在常量池中，就会实例化该字符串并且将其放到常量池中，然后在堆中复制该对象的副本，然后将堆中对象的地址赋值给引用s。
-
-![](./assets/5.2.png)
+ String s=new String(”1”)： jvm会直接在非String constant pool 中创建字符串对象，然后把该对象引用返回给String b，并且不会把"abc” 加入到String constant pool中。new就是在堆中创建一个新的String对象，不管"abc"在内存中是否存在，都会在堆中开辟新空间。 
 
 
 
@@ -346,9 +449,10 @@ String s=”1”：创建字符串常量时，JVM会首先检查字符串常量�
 
 ##### 7.4.2 intern() 
 
-字符串常量池（String Pool）保存着所有字符串字面量（literal strings），这些字面量在编译时期就确定。不仅如此，还可以使用 String 的 intern() 方法在运行过程将字符串添加到 String Pool 中。
+虽然new String()方法并不会把"abc” 加入到String constant pool中，但是可以手动调用String.intern()，将new 出来的字符串对象加入到String constant pool中。 
 
-当一个字符串调用 intern() 方法时，如果 String Pool 中已经存在一个字符串和该字符串值相等（使用 equals() 方法进行确定），那么就会返回 String Pool 中字符串的引用；否则，就会在 String Pool 中添加一个新的字符串，并返回这个新字符串的引用。
+1. 执行intern方法时，如果常量池中存在和String对象相同的字符串，则返回常量池中对应字符串的引用；  
+2. 如果常量池中不存在对应的字符串，则添加该字符串到常量中，并返回字符串引用； 
 
 ```java
 String s1 = new String("aaa");
@@ -429,29 +533,7 @@ String s2=new StringBuilder(“13”)
 
   很多类重写了 equals 方法，比如 String、Integer  等把它变成了值比较。
 
-注意：equals 方法不能用于比较基本数据类型的变量。 
-
-**举个例子：**
-
-```java
-public class test1 {
-    public static void main(String[] args) {
-        String a = new String("ab"); // a 为一个引用
-        String b = new String("ab"); // b为另一个引用,对象的内容一样
-        String aa = "ab"; // 放在常量池中
-        String bb = "ab"; // 从常量池中查找
-        if (aa == bb) // true
-            System.out.println("aa==bb");
-        if (a == b) // false，非同一对象
-            System.out.println("a==b");
-        if (a.equals(b)) // true
-            System.out.println("aEQb");
-        if (42 == 42.0) { // true
-            System.out.println("true");
-        }
-    }
-}
-```
+注意：equals 方法不能用于比较基本数据类型的变量。
 
 **说明：**
 
@@ -468,25 +550,16 @@ public class test1 {
 
 ##### 9.2.1 为什么要有 hashCode
 
- 个问题应该是有个前提，就是你需要用到  HashMap、HashSet 等 Java 集合，用不到哈希表的话，其实仅仅重写 equals() 方法也可以。而工作中的场景是常常用到  Java 集合，所以 Java 官方建议重写 equals() 就一定要重写 hashCode() 方法。 
+在Java中任何一个对象都具备equals(Object obj)和hashCode()这两个方法，因为他们是在Object类中定义的。 
 
-对于对象集合的判重，如果一个集合含有  10000 个对象实例，仅仅使用 equals() 方法的话，那么对于一个对象判重就需要比较 10000  次，随着集合规模的增大，时间开销是很大的。但是同时使用哈希表的话，就能快速定位到对象的大概存储位置，并且在定位到大概存储位置后，后续比较过程中，如果两个对象的  hashCode 不相同，也不再需要调用 equals() 方法，从而大大减少了 equals() 比较次数。 
+- hashCode() 的作用是获取哈希码，也称为散列码；它实际上是返回一个int整数。这个哈希码的作用是确定该对象在哈希表中的索引位置。 
+- equals它的作用也是判断两个对象是否相等，如果对象重写了equals()方法，比较两个对象的内容是否相等；如果没有重写，比较两个对象的地址是否相同，价于“==”。
 
-所以从程序实现原理上来讲的话，既需要 equals() 方法，也需要 hashCode() 方法。那么既然重写了 equals()，那么也要重写 hashCode() 方法，以保证两者之间的配合关系。 
+
+
+ 重写equals()方法就必须重写hashCode()方法主要是针对HashSet和Map集合类型 
+
 ![](./assets/5.3.png)
-
-实际的使用中，一个对象一般有key和value，可以根据key来计算它的hashCode。假设现在全部的对象都已经根据自己的hashCode值存储在不同的存储区域中了，那么现在查找某个对象（根据对象的key来查找），不需要遍历整个集合了，现在只需要计算要查找对象的key的hashCode，然后找到该hashCode对应的存储区域，在该存储区域中来查找就可以了
-
-
-##### 9.2.3 hashCode（）与equals（）
-
-介绍：
-
-在Java中任何一个对象都具备equals(Object obj)和hashCode()这两个方法，因为他们是在Object类中定义的。 equals(Object obj)方法用来判断两个对象是否“相同”，如果“相同”则返回true，否则返回false。 hashCode()方法返回一个int数，在Object类中的默认实现是“将该对象的内部地址转换成一个整数返回”。 
-
-
-
-何时需要重写equals和hashCode：一般来说涉及到对象之间的比较大小就需要重写equals方法 
 
 
 
@@ -494,20 +567,11 @@ public class test1 {
 
 ![](./assets/5.4.png)
 
-从上面的图中可以清晰地看到在存储一个对象时，先进行hashCode值的比较，然后进行equals的比较。
+从上面的图中可以清晰地看到在存储一个对象时，先进行hashCode值的比较，然后进行equals的比较。hashCode相同而且equals不同的对象会用链地址法解决hash冲突。
+
+如果只重写了hashcode没有重写equals方法，那么即使是hashcode相同而且内容也相同的key，也会因为地址不同被equals判定为是不同的对象。
 
 
-
-总结：
-   1.hashCode是为了提高在散列结构存储中查找的效率，在线性表中没有作用。
-   2.equals和hashCode需要同时覆盖。
-   3.若两个对象equals返回true，则hashCode有必要也返回相同的int数。
-
-4. 若两个对象equals返回false，则hashCode不一定返回不同的int数,但为不相等的对象生成不同hashCode值可以提高 哈希表的性能。
-5. 若两个对象hashCode返回相同int数，则equals不一定返回true。
-6. 若两个对象hashCode返回不同int数，则equals一定返回false。
-
-   7.同一对象在执行期间若已经存储在集合中，则不能修改影响hashCode值的相关信息，否则会导致内存泄露问题。
 
 
 
@@ -610,7 +674,7 @@ public class A {
 
 **3. 静态语句块**  
 
-静态语句块在类初始化时运行一次。
+静态语句块在类加载的准备阶段分配内存，类初始化时运行一次。
 
 ```java
 public class A {
@@ -662,6 +726,8 @@ import static com.xxx.ClassName.*
 ```
 
 **6. 初始化顺序**  
+
+new一个对象
 
 静态变量和静态语句块优先于实例变量和普通语句块，静态变量和静态语句块的初始化顺序取决于它们在代码中的顺序。
 
@@ -724,7 +790,7 @@ Java 中也不可以覆盖 private 的方法，因为 private 修饰的变量和
 
 this关键字用于引用类的当前实例。 例如：
 
-```
+```java
 class Manager {
     Employees[] employees;
      
@@ -914,7 +980,9 @@ System.out.println(InterfaceExample.x);
 
 **构造器是否可以被重写？**
 
-在讲继承的时候我们就知道父类的私有属性和构造方法并不能被继承，所以 Constructor 也就不能被 Override（重写），但是可以 Overload（重载），所以你可以看到一个类中有多个构造函数的情况。
+因为被重写的前提是被继承,而*构造*方法根本就不能继承,所以谈不上被重写。 
+
+构造方法的方法名与类名必须一样，父子类不能同名，故不能继承   
 
 
 
@@ -959,6 +1027,51 @@ Java 程序在执行子类的构造方法之前，如果没有用 super() 来调
 **什么是不可变对象?好处是什么?**
 
 不可变对象指对象一旦被创建,状态就不能再改变,任何修改都会创建一个新的对象,如 String、Integer及其它包装类.不可变对象最大的好处是线程安全.
+
+integer源码：
+
+```java
+// Integer类中私有的静态类 承载cache的实现
+private static class IntegerCache {
+    static final int low = -128;// 最小支持为-128
+    static final int high;//最大支持
+    static final Integer cache[];// 用来装载缓存  常量池
+
+    static {
+        // -128~127 这个范围的整数值是使用最广泛的
+        int h = 127;
+        // Java6中可以通过调整JVM启动参数来设置最大值
+        // 根据应用程序的实际情况 灵活的调整来提高性能
+        // JVM 的启动参数 -XX:AutoBoxCacheMax=size 修改最大值
+        String integerCacheHighPropValue =
+        sun.misc.VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
+        if (integerCacheHighPropValue != null) {
+            try {
+                int i = parseInt(integerCacheHighPropValue);
+                // 获取较大者
+                i = Math.max(i, 127);
+                // 设置最大值不能超过Inter.MAX_VALUE
+                h = Math.min(i, Integer.MAX_VALUE - (-low) -1);
+            } catch( NumberFormatException nfe) {
+                // 如果该值配置错误则忽略该参数配置的值，使用默认范围-128~127
+            }
+        }
+        high = h;
+        // 初始化数组容量为127 + 128 + 1(以默认区间为参考)
+        cache = new Integer[(high - low) + 1];
+        int j = low;
+        // 缓存通过for循环来实现，创建范围内的整数对象并存储到cache数组中
+        // 程序第一次使用Integer的时候需要一定的额外时间来初始化该缓存
+        for(int k = 0; k < cache.length; k++)
+            cache[k] = new Integer(j++);
+
+        // range [-128, 127] must be interned (JLS7 5.1.7)
+        assert IntegerCache.high >= 127;
+    }
+
+    private IntegerCache() {}
+}
+```
 
 
 
@@ -1141,7 +1254,7 @@ public class SwitchString {
 
 jvm是先调用String的hashCode方法得到hash值，然后将case中的常量换掉，再用euqals再次确认。
 
-但是有个很奇怪的地方，为什么在case中，还要再使用String的equals方法呢？这就和String的hashCode计算hash值有关了
+
 
 ```java
     public int hashCode() {
@@ -1232,7 +1345,7 @@ System.out.println(x^y);//14
 
 
 
-# 20 Java 中的参数传递时传还是传引用？
+# 20 Java 中的参数传递是值传递还是传引用？
 
 Java 的参数是以值传递的形式传入方法中，而不是引用传递。
 
