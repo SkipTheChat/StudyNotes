@@ -572,7 +572,9 @@ synchronized关键字经过编译之后，会在同步块的前后分别形成**
 
 ### 9.2 实现原理&源码
 
-[推荐博客](https://www.cnblogs.com/takumicx/p/9402021.html)
+[推荐博客1](https://www.jianshu.com/p/b6efbdbdc6fa)
+
+[推荐博客2](https://www.cnblogs.com/takumicx/p/9402021.html)
 
 ReentrantLock主要利用CAS+AQS队列来实现。它支持公平锁和非公平锁，两者的实现类似。 
 

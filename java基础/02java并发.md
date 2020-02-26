@@ -300,7 +300,9 @@ ThreadPoolExecutor pool = new ThreadPoolExecutor(3,5,50,TimeUnit.MILLISECONDS,bq
 
 
 
-# 2 线程池原理
+# 2 线程池
+
+[博客](https://www.jianshu.com/p/d2729853c4da)
 
 ### 2.1 线程池组成&优势
 

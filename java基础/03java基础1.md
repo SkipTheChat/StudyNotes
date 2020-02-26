@@ -13,7 +13,7 @@
 | char    | 文本型 | 2byte     | 0~216-1                       |
 | boolean | 布尔型 | 1byte     | true/false                    |
 
-byte-boolean   int-char  short-float long-double
+byte-boolean   int-float short-char   long-double
 
 JVM 会在编译时期将 boolean 类型的数据转换为 int，使用 1 来表示 true，0 表示 false。JVM 支持 boolean 数组，但是是通过读写 byte 数组来实现的。
 
@@ -607,6 +607,10 @@ final关键字主要用在三个地方：变量、方法、类。
 - 静态变量：是被 static 修饰的变量，也称为类变量，它属于类，因此不管创建多少个对象，静态变量在内存中有且仅有一个拷贝；静态变量可以实现让多个对象共享内存。 
 - 实例变量：每创建一个实例就会产生一个实例变量，需要先创建对象，然后通过对象才能访问到它，它与该实例同生共死。
 
+> 使用场景：1.需要被类中所有对象共享   
+>
+> 2.需要在对象创建前，类初始化的过程就要使用的变量
+
 ```java
 public class A {
 
@@ -935,8 +939,8 @@ System.out.println(InterfaceExample.x);
 - 抽象类中可以有抽象方法和具体方法，而接口中只能有抽象方法（public abstract）； 
 - 抽象类里的抽象方法必须全部被子类所实现，如果子类不能全部实现父类抽象方法，即如果一个类里有抽象方法，那么该子类只能是抽象类。同样，一个实现接口的时候，如不能全部实现接口方法，那么该类也只能为抽象类。 
 - 从使用上来看，一个类可以实现多个接口，但是不能继承多个抽象类。
-- 抽象类中的成员权限可以是 public、默认、protected（抽象类中抽象方法就是为了重写，所以不能被 private  修饰），而接口中的成员只可以是 public（方法默认：public abstrat、成员变量默认：public static final）；
--  抽象类中可以包含静态方法，而接口中不可以包含静态方法； 
+- 抽象类中的成员权限可以是 public、默认、protected（抽象类中抽象方法就是为了重写，所以不能被 private  修饰），而接口中的成员只可以是 public（接口中除了static、final变量，不能有其他变量，而抽象类中则不一定。 ）
+- 抽象类中可以包含静态方法，而接口中不可以包含静态方法； 
 
 **JDK8中的改变：**
 
