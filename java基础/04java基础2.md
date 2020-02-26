@@ -726,9 +726,7 @@ List<String> list = new ArrayList<String>();
 
 ### 5.5 transient 关键字
 
-对于不想进行序列化的变量，使用 transient 关键字修饰。
-
-transient 关键字的作用是：阻止实例中那些用此关键字修饰的的变量序列化。当对象被反序列化时，被 transient 修饰的变量值不会被持久化和恢复。transient 只能修饰变量，不能修饰类和方法。
+transient 关键字的作用是：当对象被反序列化时，被 transient 修饰的变量值不会被持久化和恢复。transient 只能修饰变量，不能修饰类和方法。
 
 
 
@@ -823,6 +821,11 @@ Java 将内存空间分为堆和栈。基本类型直接在栈中存储数值，
 
 ### 6.4 浅拷贝
 
+1. **浅拷贝**：对基本数据类型进行值传递，对引用数据类型进行引用传递般的拷贝，此为浅拷贝。
+2. **深拷贝**：对基本数据类型进行值传递，对引用数据类型，创建一个新的对象，并复制其内容，此为深拷贝。
+
+
+
 浅克隆只是复制了对象的引用地址，两个对象指向同一个内存地址，所以修改其中任意的值，另一个值都会随之变化，这就是浅克隆。 
 
 **注意：**调用对象的 clone 方法，必须要让类实现 Cloneable 接口，并且覆写 clone 方法。
@@ -840,11 +843,7 @@ Java 将内存空间分为堆和栈。基本类型直接在栈中存储数值，
 
 ![](./assets/4.3.png)　
 
-创建一个新对象：
 
-- 将当前对象的**非静态字段复制**到该新对象。
-- 如果字段是值类型的，那么对该字段执行复制。
-- 如果该字段是引用类型的话，则复制引用但不复制引用的对象。因此，原始对象及其副本引用同一个对象。
 
 
 
@@ -1119,7 +1118,7 @@ throws ClassFormatError
 
 每一个动态代理类都必须要实现  InvocationHandler 这个接口，并且每个代理类的实例都关联到了一个  handler，当我们通过代理对象调用一个方法的时候，这个方法的调用就会被转发为由 InvocationHandler 这个接口的 invoke  方法来进行调用。我们来看看 InvocationHandler 这个接口的唯一一个方法 invoke 方法：
 
-```
+```java
 Object invoke(Object proxy, Method method, Object[] args) throws Throwable
 ```
 
@@ -1131,7 +1130,7 @@ args: 指代的是调用真实对象某个方法时接受的参数
 
 Proxy 类的作用是动态创建一个代理对象的类。它提供了许多的方法，但是我们用的最多的就是 newProxyInstance 这个方法：
 
-```
+```java
 publicstaticObject newProxyInstance(ClassLoader loader, Class<?>[] interfaces, InvocationHandler handler) throws IllegalArgumentException
 ```
 

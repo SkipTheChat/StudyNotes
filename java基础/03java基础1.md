@@ -116,14 +116,6 @@ Java 中也不可以覆盖 private 的方法，因为 private 修饰的变量和
 
 
 
-**问题二：构造器是否可以被重写？**
-
-构造器是在类加载过程的初始化阶段触发的。重写是基于动态分派的。
-
-在讲继承的时候我们就知道父类的私有属性和构造方法并不能被继承，所以 Constructor 也就不能被 Override（重写），但是可以 Overload（重载），所以你可以看到一个类中有多个构造函数的情况。
-
-
-
 
 
 # 6 Java 面向对象编程三大特性: 封装 继承 多态
@@ -392,7 +384,7 @@ String 不可变性天生具备线程安全，可以在多个线程中安全地�
 
 
 
-###  7.3 String & StringBuffer & StringBuilder 
+###  7.3 String & StringBuilder&StringBuffer  
 
 String 类中使用 final 关键字修饰字符数组来保存字符串，`private　final　char　value[]`，所以 String 对象是不可变的。而StringBuilder 与 StringBuffer 都继承自 AbstractStringBuilder 类，在 AbstractStringBuilder 中也是使用字符数组保存字符串`char[]value` 但是没有用 final 关键字修饰，所以这两种对象都是可变的。
 
@@ -449,10 +441,9 @@ String s=”1”：此创建方法会在String constant pool中创建对象。jv
 
 ##### 7.4.2 intern() 
 
-虽然new String()方法并不会把"abc” 加入到String constant pool中，但是可以手动调用String.intern()，将new 出来的字符串对象加入到String constant pool中。 
+**当调用 intern 方法时，如果池已经包含一个等于此 String 对象的字符串（该对象由 equals(Object) 方法确定），则返回池中的字符串。否则，将此 String 对象添加到池中，并且返回此 String 对象的引用** 
 
-1. 执行intern方法时，如果常量池中存在和String对象相同的字符串，则返回常量池中对应字符串的引用；  
-2. 如果常量池中不存在对应的字符串，则添加该字符串到常量中，并返回字符串引用； 
+设计这个方法的初衷是为了节省内存。
 
 ```java
 String s1 = new String("aaa");
