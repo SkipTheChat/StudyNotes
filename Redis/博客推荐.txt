@@ -1,2 +1,0 @@
-redis分类里面整理的非常好：
-https://www.cnblogs.com/ysocean/tag/Redis%E8%AF%A6%E8%A7%A3/
