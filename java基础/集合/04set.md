@@ -2,11 +2,11 @@
 
 特点：
 
-- HashSet是**基于HashMap实现的**，HashSet中的元素都存放在HashMap的key上面，而value中的值都是统一的一个`private static final Object PRESENT = new Object();`
-- 不保证set的迭代顺序，特别是它不保证该顺序恒久不变
-- 不允许有重复元素，有且只允许一个null元素
-- 线程不安全
-- 查询很快，插入速度也很快，但是适用于少量数据的插入操作。数据比较多的时候会涉及到扩容问题，0.75加载因子,所以速度会变慢。
+1. HashSet是**基于HashMap实现的**，HashSet中的元素都存放在HashMap的key上面，而value中的值都是统一的一个`private static final Object PRESENT = new Object();`
+2. 不保证set的迭代顺序，特别是它不保证该顺序恒久不变
+3. 不允许有重复元素，有且只允许一个null元素
+4. 线程不安全
+5. 查询很快，插入速度也很快，但是适用于少量数据的插入操作。数据比较多的时候会涉及到扩容问题，0.75加载因子,所以速度会变慢。
 
 
 
