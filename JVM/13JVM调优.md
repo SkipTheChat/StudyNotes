@@ -89,11 +89,11 @@ XX:+UseCompressedOops -XX:+UseFastUnorderedTimeStamps -XX:+UseParallelGC
 
 
 
-### 1.4 通过jstat命令进行查看堆内存使用情况
+## 1.4 通过jstat命令进行查看堆内存使用情况
 
 jstat命令可以查看堆内存各部分的使用量，以及加载类的数量。
 
-#### 1.4.1 查看class加载统计
+### 1.4.1 查看class加载统计
 
 ```shell
 [root@node01 ~]# jps
@@ -114,7 +114,7 @@ Time：时间
 
 
 
-#### 1.4.2 查看编译统计
+### 1.4.2 查看编译统计
 
 ```shell
 [root@node01 ~]# jstat -compiler 6219
@@ -133,7 +133,7 @@ FailedMethod：失败的方法
 
 
 
-#### 1.4.3 垃圾回收统计
+### 1.4.3 垃圾回收统计
 
 ```shell
 [root@node01 ~]# jstat -gc 6219
@@ -144,8 +144,8 @@ CCSU YGC YGCT FGC FGCT GCT
 #也可以指定打印的间隔和次数，每1秒中打印一次，共打印5次
 
 [root@node01 ~]# jstat -gc 6219 1000 5
-S0C S1C S0U S1U EC EU OC OU MC MU CCSC
-CCSU YGC YGCT FGC FGCT GCT
+S0C     S1C   S0U S1U     EC      EU     OC       OU     MC      MU 
+CCSCCCSU YGC YGCT FGC    FGCT     GCT
 9216.0 8704.0 0.0 6127.3 62976.0 3917.3 33792.0 20434.9 23808.0 23196.1
 2560.0 2361.6 7 1.078 1 0.244 1.323
 9216.0 8704.0 0.0 6127.3 62976.0 3917.3 33792.0 20434.9 23808.0 23196.1
@@ -249,7 +249,7 @@ free = 14612880 (13.935928344726562MB)
 >
 > jmap -histo:live <pid> | more
 
-```
+```shell
 [root@node01 ~]# jmap -histo:live 6219 | more
 num 	#instances 	#bytes 	class name
 ----------------------------------------------
@@ -751,7 +751,7 @@ ParNew垃圾收集器是工作在年轻代上的，只是将串行的垃圾收�
 
 
 
-#### 2.2.2.2 ParallelGC垃圾收集器
+#### 2.2.2.2 Parallel Scavenge垃圾收集器
 
 ParallelGC收集器工作机制和ParNewGC收集器一样，只是在此基础之上，新增了两个和系统吞吐量相关的参数，
 使得其使用起来更加的灵活和高效。
