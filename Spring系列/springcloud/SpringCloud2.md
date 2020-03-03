@@ -1,4 +1,4 @@
-# 1.Hystrix
+# :taco:1 Hystrix
 
 [推荐博客](https://segmentfault.com/a/1190000005988895)
 
@@ -319,7 +319,7 @@ circuitBreaker.errorThresholdPercentage=50
 
 
 
-# 2 Feign
+# :tada: 2 Feign
 
 在前面的学习中，我们使用了Ribbon的负载均衡功能，大大简化了远程调用时的代码：
 
@@ -341,13 +341,14 @@ spring cloud对feign做了增强，使feign支持了spring mvc注解，并整合
 
 Feign的一个关键机制就是使用了动态代理，Feign的工作原理：
 
-如果你对某个接口定义了@FeignClient注解，Feign就会针对这个接口创建一个动态代理；
+- 如果你对某个接口定义了@FeignClient注解，Feign就会针对这个接口创建一个动态代理；
 
-接着你要是调用那个接口，本质就是会调用 Feign创建的动态代理，这是核心中的核心；
+- 接着你要是调用那个接口，本质就是会调用 Feign创建的动态代理，这是核心中的核心；
 
-Feign的动态代理会根据你在接口上的@RequestMapping等注解，来动态构造出你要请求的服务的地址；
+- Feign的动态代理会根据你在接口上的@RequestMapping等注解，来动态构造出你要请求的服务的地址；
 
-最后从Ribbon中拿到对应的IP地址个端口号，针对这个地址，发起请求、解析响应。
+- 最后从Ribbon中拿到对应的IP地址个端口号，针对这个地址，发起请求、解析响应。
+
 
 
 
@@ -391,7 +392,7 @@ public class ItcastServiceConsumerApplication {
 
  ![1540683659305](assets/1540683659305.png)
 
-内容：
+内容：表示向外提供queryById方法。
 
 ```java
 @FeignClient(value = "service-provider") // 标注该类是一个feign接口
@@ -402,11 +403,17 @@ public interface UserClient {
 }
 ```
 
-- 首先这是一个接口，Feign会通过动态代理，帮我们生成实现类。这点跟mybatis的mapper很像
-- `@FeignClient`，声明这是一个Feign客户端，类似`@Mapper`注解。同时通过`value`属性指定服务名称
-- 接口中的定义方法，完全采用SpringMVC的注解，Feign会根据注解帮我们生成URL，并访问获取结果
+调用原理过程：
 
-改造原来的调用逻辑，调用UserClient接口：
+- 如果你对某个接口定义了@FeignClient注解，Feign就会针对这个接口创建一个动态代理；这点跟mybatis的mapper很像
+- `@FeignClient`，声明这是一个Feign客户端，类似`@Mapper`注解。同时通过`value`属性指定服务名称
+- 接着你要是调用那个接口，本质就是会调用 Feign创建的动态代理，这是核心中的核心；
+- Feign的动态代理会根据你在接口上的@RequestMapping等注解，来动态构造出你要请求的服务的地址；
+- 最后从Ribbon中拿到对应的IP地址个端口号，针对这个地址，发起请求、解析响应。
+
+
+
+调用UserClient接口方法：本质也就是会调用 Feign创建的动态代理
 
 ```java
 @Controller
@@ -568,78 +575,486 @@ public interface UserFeignClient {
 
 
 
-# 3.Zuul网关
+# :icecream: 3 Zuul网关
+
+## 3.1 功能
 
 通过前面的学习，使用Spring Cloud实现微服务的架构基本成型，大致是这样的：
 
 ![1525674644660](/assets/1525674644660.png)
 
-	我们使用Spring Cloud Netflix中的Eureka实现了服务注册中心以及服务注册与发现；而服务间通过Ribbon或Feign实现服务的消费以及均衡负载。为了使得服务集群更为健壮，使用Hystrix的融断机制来避免在微服务架构中个别服务出现异常时引起的故障蔓延。
-	
-	在该架构中，我们的服务集群包含：内部服务Service A和Service B，他们都会注册与订阅服务至Eureka Server，而Open Service是一个对外的服务，通过均衡负载公开至服务调用方。我们把焦点聚集在对外服务这块，直接暴露我们的服务地址，这样的实现是否合理，或者是否有更好的实现方式呢？
+
+
+zuul加入后的架构图：不管是来自于客户端（PC或移动端）的请求，还是服务内部调用。一切对服务的请求都会经过Zuul这个网关，然后再由网关来实现 鉴权、动态路由等等操作。Zuul就是我们服务的统一入口。
+
+![1525675648881](/assets/1525675648881.png)
 
 
 
-先来说说这样架构需要做的一些事儿以及存在的不足：
-
-- 破坏了服务无状态特点。
-
-  	为了保证对外服务的安全性，我们需要实现对服务访问的权限控制，而开放服务的权限控制机制将会贯穿并污染整个开放服务的业务逻辑，这会带来的最直接问题是，破坏了服务集群中REST API无状态的特点。
-
-  	从具体开发和测试的角度来说，在工作中除了要考虑实际的业务逻辑之外，还需要额外考虑对接口访问的控制处理。
-- 无法直接复用既有接口。
-
-  	当我们需要对一个即有的集群内访问接口，实现外部服务访问时，我们不得不通过在原有接口上增加校验逻辑，或增加一个代理调用来实现权限控制，无法直接复用原有的接口。
 
 
+Zuul是Spring Cloud全家桶中的微服务API网关,核心是一系列的**过滤器**，所有从设备或网站来的请求都会经过Zuul到达后端的Netflix应用程序。作为一个边界性质的应用程序，Zuul提供了动态路由、监控、弹性负载和安全功能。Zuul底层利用各种filter实现如下功能：
 
-面对类似上面的问题，我们要如何解决呢？答案是：服务网关！
-
-
-
-为了解决上面这些问题，我们需要将权限控制这样的东西从我们的服务单元中抽离出去，而最适合这些逻辑的地方就是处于对外访问最前端的地方，我们需要一个更强大一些的均衡负载器的 服务网关。
-
- 
-
-服务网关是微服务架构中一个不可或缺的部分。通过服务网关统一向外系统提供REST API的过程中，除了具备`服务路由`、`均衡负载`功能之外，它还具备了`权限控制`等功能。Spring Cloud Netflix中的Zuul就担任了这样的一个角色，为微服务架构提供了前门保护的作用，同时将权限控制这些较重的非业务逻辑内容迁移到服务路由层面，使得服务集群主体能够具备更高的可复用性和可测试性。
+- 认证和安全 识别每个需要认证的资源，拒绝不符合要求的请求。
+- 性能监测 在服务边界追踪并统计数据，提供精确的生产视图。
+- 动态路由 根据需要将请求动态路由到后端集群。
+- 压力测试 逐渐增加对集群的流量以了解其性能。
+- 负载卸载 预先为每种类型的请求分配容量，当请求超过容量时自动丢弃。
+- 静态资源处理 直接在边界返回某些响应。
 
 
-
-## 3.1.简介
-
-官网：https://github.com/Netflix/zuul
-
- ![](/assets/1525675037152.png)
-
-Zuul：维基百科
-
-电影《捉鬼敢死队》中的怪兽，Zuul，在纽约引发了巨大骚乱。
-
-事实上，在微服务架构中，Zuul就是守门的大Boss！一夫当关，万夫莫开！
 
 ![1525675168152](/assets/1525675168152.png)
 
 
 
-## 3.2.Zuul加入后的架构
+## 3.2 原理
 
- ![1525675648881](/assets/1525675648881.png)
+zuul 是netflix开源的一个API Gateway 服务器, 本质上是一个web servlet应用。 
 
-不管是来自于客户端（PC或移动端）的请求，还是服务内部调用。一切对服务的请求都会经过Zuul这个网关，然后再由网关来实现 鉴权、动态路由等等操作。Zuul就是我们服务的统一入口。
+zuul的核心是一系列的**filters**, 其作用可以类比Servlet框架的Filter，或者AOP。 
+
+#### 3.2.1 过滤器
+
+**Zuul提供了一个框架，可以对过滤器进行动态的加载，编译，运行。**
+
+Zuul的过滤器之间没有直接的相互通信，他们之间通过一个RequestContext的静态类来进行数据传递的。RequestContext类中有ThreadLocal变量来记录每个Request所需要传递的数据。
+
+Zuul的过滤器是由Groovy写成，这些过滤器文件被放在Zuul Server上的特定目录下面，Zuul会定期轮询这些目录，修改过的过滤器会动态的加载到Zuul Server中以便过滤请求使用。
+
+ **四种标准的过滤器类型：**
+
+Zuul大部分功能都是通过过滤器来实现的。Zuul中定义了四种标准过滤器类型，这些过滤器类型对应于请求的典型生命周期。
+
+(1) PRE：这种过滤器在请求被路由之前调用。我们可利用这种过滤器实现身份验证、在集群中选择请求的微服务、记录调试信息等。
+
+(2) ROUTING：这种过滤器将请求路由到微服务。这种过滤器用于构建发送给微服务的请求，并使用Apache HttpClient或Netfilx Ribbon请求微服务。
+
+(3) POST：这种过滤器在路由到微服务以后执行。这种过滤器可用来为响应添加标准的HTTP Header、收集统计信息和指标、将响应从微服务发送给客户端等。
+
+(4) ERROR：在其他阶段发生错误时执行该过滤器。
+
+**内置的特殊过滤器**
+
+zuul还提供了一类特殊的过滤器，分别为：StaticResponseFilter和SurgicalDebugFilter
+
+StaticResponseFilter：StaticResponseFilter允许从Zuul本身生成响应，而不是将请求转发到源。
+
+SurgicalDebugFilter：SurgicalDebugFilter允许将特定请求路由到分隔的调试集群或主机。
+
+**自定义的过滤器**
+
+除了默认的过滤器类型，Zuul还允许我们创建自定义的过滤器类型。
+
+例如，我们可以定制一种STATIC类型的过滤器，直接在Zuul中生成响应，而不将请求转发到后端的微服务。
+
+ 
+
+#### 3.2.2 源码分析
+
+[博客](https://www.cnblogs.com/throwable/p/9653067.html)
+
+:cloud: 没整完…搁一下先
+
+我们先看看Zuul核心类之一com.netflix.zuul.filters.FilterRegistry(Filter的注册中心，实际上是ZuulFilter的**全局缓存**)： 
+
+```java
+public class FilterRegistry {
+    
+    // 饿汉式单例，确保全局只有一个ZuulFilter的缓存
+    private static final FilterRegistry INSTANCE = new FilterRegistry();
+    public static final FilterRegistry instance() {
+        return INSTANCE;
+    }
+
+    //缓存字符串到ZuulFilter实例的映射关系，如果是从文件加载，字符串key的格式是：文件绝对路径 + 文件名，当然也可以自实现
+    private final ConcurrentHashMap<String, ZuulFilter> filters = new ConcurrentHashMap<String, ZuulFilter>();
+
+    private FilterRegistry() {
+    }
+
+    public ZuulFilter remove(String key) {
+        return this.filters.remove(key);
+    }
+
+    public ZuulFilter get(String key) {
+        return this.filters.get(key);
+    }
+
+    public void put(String key, ZuulFilter filter) {
+        this.filters.putIfAbsent(key, filter);
+    }
+
+    public int size() {
+        return this.filters.size();
+    }
+
+    public Collection<ZuulFilter> getAllFilters() {
+        return this.filters.values();
+    }
+
+}
+```
+
+直接使用ConcurrentHashMap)缓存了ZuulFilter，这些缓存除非主动调用`remove`方法，否则不会自动清理。Zuul提供默认的动态代码编译器，接口是DynamicCodeCompiler，目的是把代码编译为Java的类，默认实现是GroovyCompiler，功能就是把Groovy代码编译为Java类。还有一个比较重要的工厂类接口是FilterFactory，它定义了ZuulFilter类生成ZuulFilter实例的逻辑，默认实现是DefaultFilterFactory，**实际上就是利用`Class#newInstance()`反射生成ZuulFilter实例。** 
 
 
 
-## 3.3.快速入门
+FilterLoader，这个类的作用就是加载文件中的ZuulFilter实例： 
+
+```java
+public class FilterLoader {
+    //静态final实例，注意到访问权限是包许可，实际上就是饿汉式单例
+    final static FilterLoader INSTANCE = new FilterLoader();
+
+    private static final Logger LOG = LoggerFactory.getLogger(FilterLoader.class);
+
+    //缓存Filter名称(主要是从文件加载，名称为绝对路径 + 文件名的形式)->Filter最后修改时间戳的映射
+    private final ConcurrentHashMap<String, Long> filterClassLastModified = new ConcurrentHashMap<String, Long>();
+    //缓存Filter名字->Filter代码的映射，实际上这个Map只使用到get方法进行存在性判断，一直是一个空的结构
+    private final ConcurrentHashMap<String, String> filterClassCode = new ConcurrentHashMap<String, String>();
+    //缓存Filter名字->Filter名字的映射，用于存在性判断
+    private final ConcurrentHashMap<String, String> filterCheck = new ConcurrentHashMap<String, String>();
+    //缓存Filter类型名称->List<ZuulFilter>的映射
+    private final ConcurrentHashMap<String, List<ZuulFilter>> hashFiltersByType = new ConcurrentHashMap<String, List<ZuulFilter>>();
+
+    //前面提到的ZuulFilter全局缓存的单例
+    private FilterRegistry filterRegistry = FilterRegistry.instance();
+    //动态代码编译器实例，Zuul提供的默认实现是GroovyCompiler
+    static DynamicCodeCompiler COMPILER;
+    //ZuulFilter的工厂类
+    static FilterFactory FILTER_FACTORY = new DefaultFilterFactory();
+    //下面三个方法说明DynamicCodeCompiler、FilterRegistry、FilterFactory可以被覆盖
+    public void setCompiler(DynamicCodeCompiler compiler) {
+        COMPILER = compiler;
+    }
+
+    public void setFilterRegistry(FilterRegistry r) {
+        this.filterRegistry = r;
+    }
+
+    public void setFilterFactory(FilterFactory factory) {
+        FILTER_FACTORY = factory;
+    }
+    //饿汉式单例获取自身实例
+    public static FilterLoader getInstance() {
+        return INSTANCE;
+    }
+    //返回所有缓存的ZuulFilter实例的总数量
+    public int filterInstanceMapSize() {
+        return filterRegistry.size();
+    }
+   
+    //通过ZuulFilter的类代码和Filter名称获取ZuulFilter实例
+    public ZuulFilter getFilter(String sCode, String sName) throws Exception {
+        //检查filterCheck是否存在相同名字的Filter，如果存在说明已经加载过
+        if (filterCheck.get(sName) == null) {
+            //filterCheck中放入Filter名称
+            filterCheck.putIfAbsent(sName, sName);
+            //filterClassCode中不存在加载过的Filter名称对应的代码
+            if (!sCode.equals(filterClassCode.get(sName))) {
+                LOG.info("reloading code " + sName);
+                //从全局缓存中移除对应的Filter
+                filterRegistry.remove(sName);
+            }
+        }
+        ZuulFilter filter = filterRegistry.get(sName);
+        //如果全局缓存中不存在对应的Filter，就使用DynamicCodeCompiler加载代码，使用FilterFactory实例化ZuulFilter
+        //注意加载的ZuulFilter类不能是抽象的，必须是继承了ZuulFilter的子类
+        if (filter == null) {
+            Class clazz = COMPILER.compile(sCode, sName);
+            if (!Modifier.isAbstract(clazz.getModifiers())) {
+                filter = (ZuulFilter) FILTER_FACTORY.newInstance(clazz);
+            }
+        }
+        return filter;
+    }
+
+    //通过文件加加载ZuulFilter
+    public boolean putFilter(File file) throws Exception {
+        //Filter名称为文件的绝对路径+文件名(这里其实绝对路径已经包含文件名，这里再加文件名的目的不明确)
+        String sName = file.getAbsolutePath() + file.getName();
+        //如果文件被修改过则从全局缓存从移除对应的Filter以便重新加载
+        if (filterClassLastModified.get(sName) != null && (file.lastModified() != filterClassLastModified.get(sName))) {
+            LOG.debug("reloading filter " + sName);
+            filterRegistry.remove(sName);
+        }
+        //下面的逻辑和上一个方法类似
+        ZuulFilter filter = filterRegistry.get(sName);
+        if (filter == null) {
+            Class clazz = COMPILER.compile(file);
+            if (!Modifier.isAbstract(clazz.getModifiers())) {
+                filter = (ZuulFilter) FILTER_FACTORY.newInstance(clazz);
+                List<ZuulFilter> list = hashFiltersByType.get(filter.filterType());
+                //这里说明了一旦文件有修改，hashFiltersByType中对应的当前文件加载出来的Filter类型的缓存要移除，原因见下一个方法
+                if (list != null) {
+                    hashFiltersByType.remove(filter.filterType()); //rebuild this list
+                }
+                filterRegistry.put(file.getAbsolutePath() + file.getName(), filter);
+                filterClassLastModified.put(sName, file.lastModified());
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    
+    //通过Filter类型获取同类型的所有ZuulFilter
+    public List<ZuulFilter> getFiltersByType(String filterType) {
+        List<ZuulFilter> list = hashFiltersByType.get(filterType);
+        if (list != null) return list;
+        list = new ArrayList<ZuulFilter>();
+        //如果hashFiltersByType缓存被移除，这里从全局缓存中加载所有的ZuulFilter，按照指定类型构建一个新的列表
+        Collection<ZuulFilter> filters = filterRegistry.getAllFilters();
+        for (Iterator<ZuulFilter> iterator = filters.iterator(); iterator.hasNext(); ) {
+            ZuulFilter filter = iterator.next();
+            if (filter.filterType().equals(filterType)) {
+                list.add(filter);
+            }
+        }
+        //注意这里会进行排序，是基于filterOrder
+        Collections.sort(list); // sort by priority
+        //这里总是putIfAbsent，这就是为什么上个方法可以放心地在修改的情况下移除指定Filter类型中的全部缓存实例的原因
+        hashFiltersByType.putIfAbsent(filterType, list);
+        return list;
+    }
+}    
+```
+
+
+
+上面的几个方法和缓存容器都比较简单，这里实际上有加载和存放动作的方法只有`putFilter`，这个方法正是Filter文件管理器FilterFileManager依赖的，接着看FilterFileManager的源码 ：
+
+```java
+public class FilterFileManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FilterFileManager.class);
+
+    String[] aDirectories;
+    int pollingIntervalSeconds;
+    Thread poller;
+    boolean bRunning = true;
+    //文件名过滤器，Zuul中的默认实现是GroovyFileFilter，只接受.groovy后缀的文件
+    static FilenameFilter FILENAME_FILTER;
+
+    static FilterFileManager INSTANCE;
+
+    private FilterFileManager() {
+    }
+
+    public static void setFilenameFilter(FilenameFilter filter) {
+        FILENAME_FILTER = filter;
+    }
+    //init方法是核心静态方法，它具备了配置，预处理和激活后台轮询线程的功能
+    public static void init(int pollingIntervalSeconds, String... directories) throws Exception, IllegalAccessException, InstantiationException{
+        if (INSTANCE == null) INSTANCE = new FilterFileManager();
+        INSTANCE.aDirectories = directories;
+        INSTANCE.pollingIntervalSeconds = pollingIntervalSeconds;
+        INSTANCE.manageFiles();
+        INSTANCE.startPoller();
+    }
+
+    public static FilterFileManager getInstance() {
+        return INSTANCE;
+    }
+
+    public static void shutdown() {
+        INSTANCE.stopPoller();
+    }
+
+    void stopPoller() {
+        bRunning = false;
+    }
+    //启动后台轮询守护线程，每休眠pollingIntervalSeconds秒则进行一次文件扫描尝试更新Filter
+    void startPoller() {
+        poller = new Thread("GroovyFilterFileManagerPoller") {
+            public void run() {
+                while (bRunning) {
+                    try {
+                        sleep(pollingIntervalSeconds * 1000);
+                        //预处理文件，实际上是ZuulFilter的预加载
+                        manageFiles();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        //设置为守护线程
+        poller.setDaemon(true);
+        poller.start();
+    }
+    //根据指定目录路径获取目录，主要需要转换为ClassPath
+    public File getDirectory(String sPath) {
+        File  directory = new File(sPath);
+        if (!directory.isDirectory()) {
+            URL resource = FilterFileManager.class.getClassLoader().getResource(sPath);
+            try {
+                directory = new File(resource.toURI());
+            } catch (Exception e) {
+                LOG.error("Error accessing directory in classloader. path=" + sPath, e);
+            }
+            if (!directory.isDirectory()) {
+                throw new RuntimeException(directory.getAbsolutePath() + " is not a valid directory");
+            }
+        }
+        return directory;
+    }
+    
+    //遍历配置目录，获取所有配置目录下的所有满足FilenameFilter过滤条件的文件
+    List<File> getFiles() {
+        List<File> list = new ArrayList<File>();
+        for (String sDirectory : aDirectories) {
+            if (sDirectory != null) {
+                File directory = getDirectory(sDirectory);
+                File[] aFiles = directory.listFiles(FILENAME_FILTER);
+                if (aFiles != null) {
+                    list.addAll(Arrays.asList(aFiles));
+                }
+            }
+        }
+        return list;
+    }
+    //遍历指定文件列表，调用FilterLoader单例中的putFilter
+    void processGroovyFiles(List<File> aFiles) throws Exception, InstantiationException, IllegalAccessException {
+        for (File file : aFiles) {
+            FilterLoader.getInstance().putFilter(file);
+        }
+    }
+   //获取指定目录下的所有文件，调用processGroovyFiles，个人认为这两个方法没必要做单独封装
+    void manageFiles() throws Exception, IllegalAccessException, InstantiationException {
+        List<File> aFiles = getFiles();
+        processGroovyFiles(aFiles);
+    }
+```
+
+分析完FilterFileManager源码之后，Zuul中基于文件加载ZuulFilter的逻辑已经十分清晰：后台启动一个守护线程，定时轮询指定文件夹里面的文件，如果文件存在变更，则尝试更新指定的ZuulFilter缓存，FilterFileManager的`init`方法调用的时候在启动后台线程之前会进行一次预加载。 
+
+
+
+FilterProcessor：加载缓存已经从Groovy中缓存好的的ZuulFilter 
+
+```java
+public class FilterProcessor {
+
+    //饿汉单例
+    static FilterProcessor INSTANCE = new FilterProcessor();
+    protected static final Logger logger = LoggerFactory.getLogger(FilterProcessor.class);
+
+    private FilterUsageNotifier usageNotifier;
+
+
+    public FilterProcessor() {
+        usageNotifier = new BasicFilterUsageNotifier();
+    }
+
+    public static FilterProcessor getInstance() {
+        return INSTANCE;
+    }
+
+    public static void setProcessor(FilterProcessor processor) {
+        INSTANCE = processor;
+    }
+
+    public void setFilterUsageNotifier(FilterUsageNotifier notifier) {
+        this.usageNotifier = notifier;
+    }
+    ...
+}
+
+    //指定Filter类型执行该类型下的所有ZuulFilter
+    public Object runFilters(String sType) throws Throwable {
+        //尝试打印Debug日志
+        if (RequestContext.getCurrentContext().debugRouting()) {
+            Debug.addRoutingDebug("Invoking {" + sType + "} type filters");
+        }
+        boolean bResult = false;
+        //获取所有指定类型的ZuulFilter
+        List<ZuulFilter> list = FilterLoader.getInstance().getFiltersByType(sType);
+        if (list != null) {
+            for (int i = 0; i < list.size(); i++) {
+                ZuulFilter zuulFilter = list.get(i);
+                Object result = processZuulFilter(zuulFilter);
+                //如果处理结果是Boolean类型尝试做或操作，其他类型结果忽略
+                if (result != null && result instanceof Boolean) {
+                    bResult |= ((Boolean) result);
+                }
+            }
+        }
+        return bResult;
+    }
+    //执行ZuulFilter，这个就是ZuulFilter执行逻辑
+    public Object processZuulFilter(ZuulFilter filter) throws ZuulException {
+        RequestContext ctx = RequestContext.getCurrentContext();
+        boolean bDebug = ctx.debugRouting();
+        final String metricPrefix = "zuul.filter-";
+        long execTime = 0;
+        String filterName = "";
+        try {
+            long ltime = System.currentTimeMillis();
+            filterName = filter.getClass().getSimpleName();
+            RequestContext copy = null;
+            Object o = null;
+            Throwable t = null;
+            if (bDebug) {
+                Debug.addRoutingDebug("Filter " + filter.filterType() + " " + filter.filterOrder() + " " + filterName);
+                copy = ctx.copy();
+            }
+            //简单调用ZuulFilter的runFilter方法
+            ZuulFilterResult result = filter.runFilter();
+            ExecutionStatus s = result.getStatus();
+            execTime = System.currentTimeMillis() - ltime;
+            switch (s) {
+                case FAILED:
+                    t = result.getException();
+                    //记录调用链中当前Filter的名称，执行结果状态和执行时间
+                    ctx.addFilterExecutionSummary(filterName, ExecutionStatus.FAILED.name(), execTime);
+                    break;
+                case SUCCESS:
+                    o = result.getResult();
+                    //记录调用链中当前Filter的名称，执行结果状态和执行时间
+                    ctx.addFilterExecutionSummary(filterName, ExecutionStatus.SUCCESS.name(), execTime);
+                    if (bDebug) {
+                        Debug.addRoutingDebug("Filter {" + filterName + " TYPE:" + filter.filterType() + " ORDER:" + filter.filterOrder() + "} Execution time = " + execTime + "ms");
+                        Debug.compareContextState(filterName, copy);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            
+            if (t != null) throw t;
+            //这里做计数器的统计
+            usageNotifier.notify(filter, s);
+            return o;
+
+        } catch (Throwable e) {
+            if (bDebug) {
+                Debug.addRoutingDebug("Running Filter failed " + filterName + " type:" + filter.filterType() + " order:" + filter.filterOrder() + " " + e.getMessage());
+            }
+             //这里做计数器的统计
+            usageNotifier.notify(filter, ExecutionStatus.FAILED);
+            if (e instanceof ZuulException) {
+                throw (ZuulException) e;
+            } else {
+                ZuulException ex = new ZuulException(e, "Filter threw Exception", 500, filter.filterType() + ":" + filterName);
+                //记录调用链中当前Filter的名称，执行结果状态和执行时间
+                ctx.addFilterExecutionSummary(filterName, ExecutionStatus.FAILED.name(), execTime);
+                throw ex;
+            }
+        }
+    }
+```
+
+
+
+
+
+## 3.3.demo
 
 ### 3.3.1.新建工程
 
-填写基本信息：
-
-![1529112749084](assets/1529112749084.png)
-
-添加Zuul依赖：
-
-![1529112691169](assets/1529112691169.png)
+添加Zuul依赖
 
 
 
@@ -755,7 +1170,7 @@ public class ZuulDemoApplication {
 
 
 
-### 3.4.4.修改映射配置，通过服务名称获取
+### 3.4.4.修改zuul映射配置，通过服务名称获取
 
 因为已经有了Eureka客户端，我们可以从Eureka获取服务的地址信息，因此映射时无需指定IP地址，而是通过服务名称来访问，而且Zuul已经集成了Ribbon的负载均衡功能。
 
@@ -874,10 +1289,6 @@ public abstract ZuulFilter implements IZuulFilter{
 - 如果是error过滤器自己出现异常，最终也会进入POST过滤器，将最终结果返回给请求客户端。
 - 如果是POST过滤器出现异常，会跳转到error过滤器，但是与pre和route不同的是，请求不会再到达POST过滤器了。
 
-所有内置过滤器列表：
-
- ![](assets/1525682427811.png)
-
 
 
 ### 3.8.3.使用场景
@@ -988,3 +1399,45 @@ hystrix:
 ```
 
 
+
+
+
+# :national_park: 4 总结
+
+**spring cloud:**可以理解为分布式开发部署的各组件的组合。它利用[Spring Boot](https://link.zhihu.com/?target=https%3A//baike.baidu.com/item/Spring%2520Boot/20249767)的开发便利性巧妙地简化了分布式系统基础设施的开发，如服务发现注册、配置中心、消息总线、负载均衡、断路器、数据监控等，都可以用Spring Boot的开发风格做到一键启动和部署。
+
+接下来我来做各组件的功能点介绍、实现原理、实现代码分析：
+
+**1、Eureka：** 负责各个服务的注册于发现，分为服务端和客户端
+
+在每个客户端启动的时候，会自动的将自己的服务名称，ip地址，端口号等信息注册到注册中心。服务端是一个注册中心，里面有一个注册表，保存了各服务所在的机器和端口号，供所有的客户端查询。（客户端，服务端的区别只是配置的区别）
+
+**2.Ribbon：**本质是一个带有负载均衡功能的http客户端，在每次请求的时候会选择一台机器，均匀的把请求分发到各台机器上。Ribbon的负载均衡默认使用的最经典的Round Robin轮询算法（适合域性能和处理能力一样，平均分配）。Ribbon的工作流程：
+
+首先Ribbon会从 Eureka Client里获取到对应的服务注册表，也就知道了所有的服务都部署在了哪些机器上，在监听哪些端口号；
+
+然后Ribbon就可以使用默认的Round Robin算法，从中选择一台机器。
+
+
+
+**3.Feign：** Feign的一个关键机制就是使用了动态代理，Feign默认集成了Ribbon，Feign的工作原理：
+
+如果你对某个接口定义了@FeignClient注解，Feign就会针对这个接口创建一个动态代理；
+
+接着你要是调用那个接口，本质就是会调用 Feign创建的动态代理，这是核心中的核心；
+
+Feign的动态代理会根据你在接口上的@RequestMapping等注解，来动态构造出你要请求的服务的地址；
+
+最后聪明从Ribbon中拿到对应的IP地址个端口号，针对这个地址，发起请求、解析响应。
+
+
+
+**4.Hystrix：**   分布式系统中某个服务挂掉后，如果系统处于高并发的场景下，大量请求涌过来的时候，上游的服务会因为没有一个线程可以处理请求，就会导致上游的服务也跟着挂掉，这就是微服务架构中恐怖的服务雪崩问题。Hystrix是隔离、熔断以及降级的一个框架。Hystrix会搞很多个小小的线程池，比如订单服务请求库存服务是一个线程池，请求仓储服务是一个线程池，请求积分服务是一个线程池。每个线程池里的线程就仅仅用于请求那个服务。
+
+​	下游的服务挂掉后，每次在上游的服务调用它的时候都会卡住几秒钟，这没有任何意义，可以直接都挂掉的服务熔断处理。比如在5分钟内请求该服务直接就返回了，不要去走网络请求卡住几秒钟，这个过程，就是所谓的熔断！
+
+ 降级（比如积分服务挂了）：每次调用积分服务，你就在数据库里记录一条消息，说给某某用户增加了多少积分，因为积分服务挂了，导致没增加成功！这样等积分服务恢复了，你可以根据这些记录手工加一下积分。这个过程，就是所谓的降级。
+
+
+
+5.**Zuul：**   这个组件是负责网络路由的，一般微服务架构中都必然会设计一个网关在里面，像android、ios、pc前端、微信小程序、H5等等，不用去关心后端的几百个服务，就知道有一个网关，所有请求都往网关走，网关会根据请求中的一些特征，将请求转发给后端的各个服务。而且有一个网关之后，还有很多好处，比如可以做统一的降级、限流、认证授权、安全，等等。
