@@ -80,7 +80,7 @@ framework：
 
 ### 1.3 Spring测试框架
 
-![](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring/assets/1.5.jpg)
+![](./assets/1.5.jpg)
 
 传统测试存在的问题：
 
@@ -210,8 +210,6 @@ DI：Dependency Injection（依赖注入），指将对象的创建权，反转�
    ②：[file:]：后面的文件使用文件系统的路径开始找；
 
 注意：只有当框架中实现了Resource 接口才能够识别上述的前缀标识符。
-
-
 
 
 
@@ -556,204 +554,15 @@ Autowired和Qualifier作用是完全一样的
 
 # 7 AOP
 
-### 7.1 静态代理
-
-**静态代理：**在程序运行前就已经存在代理类的字节码文件。AOP框架会在编译阶段生成AOP代理类，因此也称为编译时增强，他会在编译阶段将AspectJ(切面)织入到Java字节码中，运行的时候就是增强之后的AOP对象。 
-
-```java
-public class EmployeeServiceProxy implements IEmployeeService {
-	private IEmployeeService target;
-	private TransctionManager txManager;//事务
-	public void setTarget(IEmployeeService target) {
-		this.target = target;
-	}
-    
-	public void setTxManager(TransctionManager txManager) {
-		this.txManager = txManager;
-	}
-    
-	public void save(Employee e) {
-		txManager.begin();
-	try {
-		target.save(e);
-		txManager.commit();
-	} catch (Exception ex) {
-		ex.printStackTrace();
-		txManager.rollback();
-	}
-}
-    
-	public void update(Employee e) {
-		txManager.begin();
-	try {
-		target.update(e);
-		txManager.commit();
-	} catch (Exception ex) {
-		ex.printStackTrace();
-		txManager.rollback();
-		}
-	}
-}
-```
-
-
-
-xml：
-
-```java
-<bean id="transctionManager" class="cn.wolfcode.wms.tx.TransctionManager" />
-<bean id="employeeDAO" class="cn.wolfcode.wms.dao.impl.EmployeeDAOImpl" />
-<bean id="employeeServiceProxy" class="cn.wolfcode.wms.proxy.EmployeeServiceProxy">
-	<property name="txManager" ref="transctionManager" />
-    
-	<property name="target">
-		<bean class="cn.wolfcode.wms.service.impl.EmployeeServiceImpl">
-			<property name="dao" ref="employeeDAO" />
-		</bean>
-	</property>
-	
-</bean>
-```
-
-**优点：**
-
-1. 业务类只需要关注业务逻辑本身，保证了业务类的重用性。
-2. 把真实对象隐藏起来了,保护真实对象
-
-**缺点：**
-
-1. 代理对象的某个接口只服务于某一种类型的对象，也就是说每一个真实对象都得创建一个代理对象。
-2. 如果需要代理的方法很多，则要为每一种方法都进行代理处理。
-3. 如果接口增加一个方法，除了所有实现类需要实现这个方法外，所有代理类也需要实现此方法。
-
-
-
-### 7.2 动态代理
-
-Spring AOP中的动态代理主要有两种方式：JDK动态代理和CGLIB动态代理。
-
-代理模式：客户端直接使用的都是代理对象，不知道真实对象是谁，此时代理对象可以在客户端和真实对象之间起到中介的作用。
-
-- **静态代理**：在程序运行前就已经存在代理类的字节码文件。AOP框架会在编译阶段生成AOP代理类，因此也称为编译时增强，他会在编译阶段将AspectJ(切面)织入到Java字节码中，运行的时候就是增强之后的AOP对象。 
-- **动态代理**：动态代理类是在程序运行期间由JVM 通过反射等机制动态的生成的，所以不存在代理类的字节码文件，代理对象和真实对象的关系是在程序运行时期才确定的。
-
-**如何实现动态代理：**
-1）：针对有接口：使用**JDK 动态代理**
-2）：针对无接口：使用**CGLIB 或Javassist 组件**
-
-
-
-##### 7.2.1 jdk动态代理
-
-```java
-public class TransctionManagerInvocationHandler implements java.lang.reflect.InvocationHandler {
-	private Object target;
-	private TransctionManager txManager;
-		public void setTarget(Object target) {
-			this.target = target;
-	}
-    
-    public void setTxManager(TransctionManager txManager) {
-		this.txManager = txManager;
-	}
-    
-	public <T> T getProxyObject() {
-		return (T) Proxy.newProxyInstance(target.getClass().getClassLoader(),
-		target.getClass().getInterfaces(),
-		this);
-	}
-    
-	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		Object ret = null;
-		txManager.begin();
-		try {
-			ret = method.invoke(target, args);
-			txManager.commit();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			txManager.rollback();
-		}
-		return ret;
-	}
-}
-```
-
-
-
-##### 7.2.2 CGLIB 动态代理
-
-使用JDK 的动态代理，只能针对于目标对象存在接口的情况，如果目标对象没有接口，此时可以考虑使用CGLIB 的动态代理方式。
-
-```java
-public class TransctionManagerInvocationHandler implements org.springframework.cglib.proxy.InvocationHandler {
-    
-	private Object target;
-	private TransctionManager txManager;
-	public void setTarget(Object target) {
-		this.target = target;
-	}
-    
-	public void setTxManager(TransctionManager txManager) {
-		this.txManager = txManager;
-	}
-    
-	public <T> T getProxyObject() {
-		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(target.getClass());
-		enhancer.setCallback(this);
-		return (T) enhancer.create();
-	}
-    
-	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		Object ret = null;
-		txManager.begin();
-	try {
-		ret = method.invoke(target, args);
-		txManager.commit();
-	} catch (Exception ex) {
-		ex.printStackTrace();
-		txManager.rollback();
-	}
-	return ret;
-	}
-}
-```
-
-
-
-### 7.3 JDK&CGLIB代理总结
-
-**JDK 动态代理总结：**
-
-1. JAVA 动态代理是使用java.lang.reflect 包中的Proxy 类与InvocationHandler 接口这两个来完成的。
-
-2. 要使用JDK 动态代理，委托必须要定义接口。
-
-3. JDK 动态代理将会拦截所有pubic 的方法（因为只能调用接口中定义的方法），这样即使在接口中增加了新的方法，不用修改代码也会被拦截。
-
-4. 动态代理的最小单位是类(所有类中的方法都会被处理)，如果只想拦截一部分方法，可以在invoke 方法中对要执行的方法名进行判断。
-
-   
-
-**CGLIB 代理总结：**
-
-1. CGLIB 可以生成委托类的子类，并重写父类非final 修饰符的方法。
-2. 要求类不能是final 的，要拦截的方法要是非final、非static、非private 的。
-3. 动态代理的最小单位是类(所有类中的方法都会被处理);
-
-
-
-
-
-### 7.4 引出AOP
+### 7.1 引出AOP
 
 面向切面。切面的目的就是功能增强，如日志切面就是一个横切关注点，应用中许多方法需要做日志记录的只需要插入日志的切面即可。减少了代码重复冗余和耦合的情况，事务是AOP很重要的一个应用。
 
 
 
-### 7.5 使用AOP配置开发
+### 7.2 使用AOP配置开发
 
-##### 7.5.1 **使用jdk动态代理配置AOP**
+##### 7.2.1 **使用jdk动态代理配置AOP**
 
 切面的目的就是功能增强，如日志切面就是一个横切关注点，应用中许多方法需要做日志记录的只需要插
 入日志的切面即可。
@@ -878,7 +687,7 @@ public class TransactionManager {
 
 
 
-##### 7.5.2 使用CGLIB配置AOP
+##### 7.2.2 使用CGLIB配置AOP
 
 > 默认使用的JDK 动态代理方式，可以设置使用CGLIB 方式。
 >
