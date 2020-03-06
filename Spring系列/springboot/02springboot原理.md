@@ -1,6 +1,8 @@
 # 1 自动配置原理
 
-> 自动配置类
+> 自动配置类-入口文件
+
+直接把启动类放到根目录下，启动类会扫描当前包及子包
 
 ```java
 @SpringBootConfiguration
@@ -32,7 +34,7 @@ public class Java3yApplication {
 
 #### 1.1.2 @EnableAutoConfiguration 
 
-这个注解可以帮助我们**自动载入**应用程序所需要的所有**默认配置**。比如我们引入了spring-boot-starter-web，而这个启动器中帮我们添加了tomcat、SpringMVC的依赖。此时自动配置就知道你是要开发一个web应用，所以就帮你完成了web及SpringMVC的默认配置。
+简单的说它的作用就是借助@Import的支持，帮助SpringBoot应用将所有符合条件的@Configuration配置都加载到当前SpringBoot创建并使用的IoC容器，即这个注解可以帮助我们自动载入应用程序所需要的所有默认配置。
 
 我们点进去看一下，发现有**两个**比较重要的注解：
 
@@ -65,9 +67,15 @@ public @interface EnableAutoConfiguration {
 
 ##### 1.1.2.2 Import
 
+先放一张过程总图：
+
+![](./assets/1.1.webp)
+
+
+
 找到所有JavaConfig自动配置类的全限定名对应的class，然后将所有自动配置类加载到Spring容器中。 
 
-查看AutoConfigurationImportSelector源码：
+查看AutoConfigurationImportSelector源码：看重要方法SpringFactoriesLoader（Spring框架原有的一个工具类 ）
 
 ```java
 public String[] selectImports(AnnotationMetadata annotationMetadata) {
@@ -95,11 +103,7 @@ protected List<String> getCandidateConfigurations(AnnotationMetadata metadata,
 
 ```
 
-其中，SpringFactoriesLoader.loadFactoryNames 方法的作用就是从META-INF/spring.factories文件中读取指定类对应的类名称列表 ：
-
-![](./assets/2.1.png)
-
-
+其中，`SpringFactoriesLoader`其主要功能就是从指定的配置文件`META-INF/spring.factories`加载配置。将其中org.springframework.boot.autoconfigure.EnableutoConfiguration对应的配置项通过**反射**（Java Refletion）实例化为对应的标注了@Configuration的JavaConfig形式的IoC容器配置类，然后汇总为一个并加载到IoC容器。(如下页面模版的配置) 
 
 spring.factories 文件中有关自动配置的配置信息如下：
 
@@ -395,4 +399,36 @@ ResourceProperties中主要定义了静态资源（.js,.html,.css等)的路径�
 ```
 
 从上面的spring-boot-starter-web的pom.xml中我们可以发现，spring-boot-starter-web就是将web开发要使用的spring-web、spring-webmvc等坐标进行了“打包”，这样我们的工程只要引入spring-boot-starter-web起步依赖的坐标就可以进行web开发了，同样体现了依赖传递的作用。
+
+
+
+# 3 springboot启动流程
+
+```java
+@SpringBootConfiguration
+public class Java3yApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Java3yApplication.class, args);
+    }
+}
+```
+
+ 当我们运行SpringApplication的main方法时,调用静态方法run()首先是实例化,SpringApplication初始化的时候主要做主要做三件事： 
+
+
+
+
+
+# 4 springboot处理http请求图
+
+
+
+
+
+
+
+spring boot和spring的区别     
+
+解决包依赖
 
