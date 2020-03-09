@@ -1104,43 +1104,7 @@ throws ClassFormatError
 
 
 
-# 8 动态代理
 
-动态代理：当想要给实现了某个接口的类中的方法，加一些额外的处理。比如说加日志，加事务等。可以给这个类创建一个代理，故名思议就是创建一个新的类，这个类不仅包含原来类方法的功能，而且还在原来的基础上添加了额外处理的新功能。这个代理类并不是定义好的，是动态生成的。具有解耦意义，灵活，扩展性强。
-
-动态代理的应用：Spring 的 AOP 、加事务、加权限、加日志。
-
-
-
-怎么实现动态代理？
-
-首先必须定义一个接口，还要有一个  InvocationHandler（将实现接口的类的对象传递给它）处理类。再有一个工具类 Proxy（习惯性将其称为代理类，因为调用它的  newInstance() 可以产生代理对象，其实它只是一个产生代理对象的工具类）。利用到  InvocationHandler，拼接代理类源码，将其编译生成代理类的二进制码，利用加载器加载，并将其实例化产生代理对象，最后返回。
-
-每一个动态代理类都必须要实现  InvocationHandler 这个接口，并且每个代理类的实例都关联到了一个  handler，当我们通过代理对象调用一个方法的时候，这个方法的调用就会被转发为由 InvocationHandler 这个接口的 invoke  方法来进行调用。我们来看看 InvocationHandler 这个接口的唯一一个方法 invoke 方法：
-
-```java
-Object invoke(Object proxy, Method method, Object[] args) throws Throwable
-```
-
-proxy: 指代我们所代理的那个真实对象
-
-method: 指代的是我们所要调用真实对象的某个方法的 Method 对象
-
-args: 指代的是调用真实对象某个方法时接受的参数
-
-Proxy 类的作用是动态创建一个代理对象的类。它提供了许多的方法，但是我们用的最多的就是 newProxyInstance 这个方法：
-
-```java
-publicstaticObject newProxyInstance(ClassLoader loader, Class<?>[] interfaces, InvocationHandler handler) throws IllegalArgumentException
-```
-
-loader：一个 ClassLoader 对象，定义了由哪个 ClassLoader 对象来对生成的代理对象进行加载；
-
-interfaces：一个 Interface 对象的数组，表示的是我将要给我需要代理的对象提供一组什么接口，如果我提供了一组接口给它，那么这个代理对象就宣称实现了该接口(多态)，这样我就能调用这组接口中的方法了 
-
-handler：一个 InvocationHandler 对象，表示的是当我这个动态代理对象在调用方法的时候，会关联到哪一个 InvocationHandler 对象上。
-
-通过 Proxy.newProxyInstance 创建的代理对象是在 Jvm 运行时动态生成的一个对象，它并不是我们的 InvocationHandler 类型，也不是我们定义的那组接口的类型，而是在运行是动态生成的一个对象。
 
 
 

@@ -20,14 +20,15 @@
 
 ## 1.什么是IOC
 
-反控：调用者只管负责从Spring 容器中获取需要使用的对象，不关心对象的创建过程，也不关心该对象依
-赖对象的创建以及依赖关系的组装，也就是把创建对象的控制权反转给了Spring 框架，从而降低代码之间的耦合度。
+反控：就是控制反转，是指创建对象的控制权的转移，以前创建对象的主动权和时机是由自己把控的，而现在这种权力转移到Spring容器中，并由容器根据配置文件去创建实例和管理各个实例之间的依赖关系，对象与对象之间松散耦合，也利于功能的复用。
+
+> Spring的IOC有三种注入方式 ：构造器注入、setter方法注入、根据注解注入。
 
 举个例子："对象a 依赖了对象 b，当对象 a 需要使用 对象 b的时候必须自己去创建。但是当系统引入了 IOC 容器后， 对象a 和对象 b  之前就失去了直接的联系。这个时候，当对象 a 需要使用 对象 b的时候， 我们可以指定 IOC 容器去创建一个对象b注入到对象 a 中"。 对象 a 获得依赖对象 b 的过程,由主动行为变为了被动行为，控制权翻转，这就是控制反转名字的由来。 
 
 
 
-**IOC管理bean原理**：
+简单来说，**IOC管理bean原理**：
 
 1. 通过Resource 对象加载配置文件
 
@@ -126,6 +127,45 @@ ctx.getBean("someBean", SomeBean.class);
 
 ## 1.1 getBean
 
+ doGetBean 的执行流程。如下：
+
+1.转换 beanName  
+
+- 如果是FactoryBean，那么就是&开头，需要去&
+
+- 如果传入的是alias，那么需要根据alias转换为真正代表的
+
+2.从缓存中获取实例
+
+ `Object sharedInstance = getSingleton(beanName);`
+
+3.如果实例不为空，且 args = null。调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
+
+4.若实例为空，两种情况：bean还没创建或者当前容器有父容器，beanName 对应的 bean 实例可能是在父容器中被创建。
+
+- 调用parentBeanFactory.getBean()到父容器中查找 bean 实例
+
+5.若父容器中不存在，则进行下一步操作 – 合并BeanDefinition
+
+ `final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);`
+
+6.处理依赖Bean
+
+ `String[] dependsOn = mbd.getDependsOn();`
+
+7.创建并缓存 bean，分三种情况：单例，多例，其他类型
+
+- 单例方式则调用`getSingleton`的`createBean`创建
+- 多例调用`getObjectForBeanInstance`方法
+
+8.最后按需转换 bean 类型，并返回转换后的 bean 实例。
+
+以上步骤对应的流程图如下：
+
+![](./assets/6.1.jpg)
+
+
+
 ```java
 public Object getBean(String name) throws BeansException {
     // getBean 是一个空壳方法，所有的逻辑都封装在 doGetBean 方法中
@@ -182,9 +222,9 @@ protected <T> T doGetBean(
     
     
     /*
-     * 如果上面的条件不满足，则表明 sharedInstance 可能为空，此时 beanName 对应的 bean 
-     * 实例可能还未创建。这里还存在另一种可能，如果当前容器有父容器，beanName 对应的 bean 实例
-     * 可能是在父容器中被创建了，所以在创建实例前，需要先去父容器里检查一下。
+     *sharedInstance为空，此时两种可能：
+      1.beanName 对应的bean实例可能还未创建。
+      2.当前容器有父容器，beanName 对应的 bean 实例可能是在父容器中被创建了，所以在创建实例前，需要先去父容器里检查一下。
      */
     else {
         // BeanFactory 不缓存 Prototype 类型的 bean，无法处理该类型 bean 的循环依赖问题
@@ -341,21 +381,9 @@ protected <T> T doGetBean(
 
 
 
- doGetBean 的执行流程。如下：
 
-1. 转换 beanName
-2. 从缓存中获取实例
-3. 如果实例不为空，且 args = null。调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
-4. 若上面的条件不成立，则到父容器中查找 beanName 对有的 bean 实例，存在则直接返回
-5. 若父容器中不存在，则进行下一步操作 – 合并 BeanDefinition
-6. 处理依赖Bean，如果当前Bean依赖了其他的Bean需要用一个for循环调用getbean获取
-7. 创建并缓存 bean
-8. 调用 getObjectForBeanInstance 方法，并按 name 规则返回相应的 bean 实例
-9. 按需转换 bean 类型，并返回转换后的 bean 实例。
 
-以上步骤对应的流程图如下：
 
-![](./assets/6.1.jpg)
 
 
 
@@ -885,6 +913,8 @@ public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 
 > 总结
 
+getSingleton()方法
+
 1. 先从 singletonObjects 集合获取 bean 实例，若不为空，则直接返回
 2. 若为空，进入创建 bean 实例阶段。先将 beanName 添加到 singletonsCurrentlyInCreation
 3. 通过 getObject 方法调用 createBean 方法创建 bean 实例
@@ -944,6 +974,8 @@ protected Object createBean(String beanName, RootBeanDefinition mbd, Object[] ar
 ```
 
 > 流程
+
+createBean方法：
 
 1. 解析 bean 类型
 2. 处理 lookup-method 和 replace-method 配置
@@ -1264,7 +1296,7 @@ protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd
 3. 若构造方式已解析过，则走快捷路径构建 bean 对象，并返回结果
 4. 如第三步不满足，则通过组合条件决定使用哪种方式构建 bean 对象
 
-这里有三种构造 bean 对象的方式，如下：
+`createBeanInstance`方法有三种构造 bean 对象的方式，如下：
 
 1. 通过“工厂方法”的方式构造 bean 对象
 2. 通过“构造方法自动注入”的方式构造 bean 对象
@@ -1428,7 +1460,7 @@ protected <T> T doGetBean(
     // ...... 
     Object bean;
 
-    // 从缓存中获取 bean 实例  这里是第一个getSingleton！！！！
+    // 从缓存中获取 bean 实例这里是第一个getSingleton！！！！
     Object sharedInstance = getSingleton(beanName);
 
     // 这里先忽略 args == null 这个条件

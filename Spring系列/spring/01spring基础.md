@@ -163,20 +163,6 @@ DI：Dependency Injection（依赖注入），指将对象的创建权，反转�
 
 
 
-##### 2.2.1 IOC管理bean原理
-
-1. 通过Resource 对象加载配置文件
-
-2. 解析配置文件，得到指定名称的bean
-
-3. 解析bean 元素，id 作为bean 的名字，class 用于反射得到bean 的实例：
-
-   注意：此时，bean 类必须存在一个无参数构造器(和访问权限无关)；
-
-4. 调用getBean 方法的时候，从容器中返回对象实例；
-
-
-
 三种创建bean的方式：
 
 ```java
@@ -435,25 +421,9 @@ class="cn.wolfcode.day1._05_create_bean._4factorybean.SomeBean4FactoryBean"/>
 
 
 
-### 3.5 Bean作用域
-
-```java
-<bean id="" class="" scope="作用域"/>
-```
 
 
-
-- **singleton: 单例，**在Spring IoC 容器中仅存在一个Bean 实例（默认的scope）。
-- **prototype: 多例，**每次从容器中调用Bean 时，都返回一个新的实例，即每次调用getBean()时，相当于执行new XxxBean()，不会在容器启动时创建对象。
-- request: 用于web 开发，将Bean 放入request 范围，request.setAttribute("xxx") ， 在同一个request 获得同一个Bean。
-- session: 用于web 开发，将Bean 放入Session 范围，在同一个Session 获得同一个Bean 。
-- globalSession: 一般用于Porlet 应用环境, 分布式系统存在全局session 概念（单点登录），如果不是porlet环境，globalSession 等同于Session 。
-- application 
-- websocket
-
-
-
-### 3.6 Bean初始化和销毁
+### 3.5 Bean初始化和销毁
 
 ```java
 <bean id="someBean" class="......"
@@ -606,7 +576,6 @@ public class TransctionManager {
 <aop:config>	
     <aop:aspect ref="transctionManager">
    <!--pointcut:切入点，哪些包中的哪些类中的哪些方法，可认为是连接点的集合。-->
-       <!--pointcut:切入点，哪些包中的哪些类中的哪些方法，可认为是连接点的集合。-->
         <aop:pointcut expression="
         execution(* cn.wolfcode.wms.service.*Service.*(..))" id="txPoint" />
             <aop:before method="begin" pointcut-ref="txPoint" />
@@ -621,6 +590,8 @@ public class TransctionManager {
 
 
 **2.AspectJ 注解配置 **
+
+>用于增强的类需要配Conponent和Aspect注解
 
 ```java
 //用于增强的类需要配Conponent和Aspect注解

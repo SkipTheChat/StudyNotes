@@ -80,7 +80,43 @@ public class UserTest extends ApplicationTests {
 
 > 总结
 
-spring 会在启动的时候扫描所有继承自 Repository 接口的 DAO  接口，然后为其实例化一个动态代理，同时根据它的方法名、参数等为其装配一系列DB操作组件，在需要注入的时候为对应的接口注入这个动态代理，在 DAO 方法被调用的时会走这个动态代理，然后经过一系列的方法拦截路由到最终的 DB 操作执行器`JpaQueryExecution`，然后拼装 sql，执行相关操作，返回结果。 
+spring 会在启动的时候扫描所有继承自 Repository 接口的 DAO  接口，然后为其实例化一个动态代理，同时根据它的方法名、参数等为其装配一系列DB操作组件，在需要注入的时候为对应的接口注入这个动态代理，在 DAO 方法被调用的时会走这个动态代理，然后经过一系列的方法拦截路由到最终的 DB 操作执行器`JpaQueryExecution`，然后拼装 sql，执行相关操作，返回结果。
+
+
+
+> 插播：jdbc步骤
+
+1.加载JDBC驱动Class.forName("com.mysql.jdbc.Driver");
+2.与数据库建立连接DriverManager.getConnection(url,uname,pwd);
+3.获取操作对象
+4.发送sql语句返回结果集
+5.释放资源.close()
+
+```java
+//1。加载驱动
+Class.forName("com.mysql.jdbc.Driver");     
+//2.获取连接conn
+Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "123");
+
+//3.获取操作对象
+Statement sta= con.createStatement();
+//4.发送sql语句返回结果集
+ResultSet rs= sta.executeQuery("SELECT * FROM `user`");
+
+while(rs.next()){
+System.out.print(rs.getObject(1)+" ");
+System.out.print(rs.getObject(2)+" ");
+System.out.print(rs.getObject(3)+" ");
+System.out.print(rs.getObject(4)+" ");
+System.out.println(rs.getObject(5)+" ");
+
+}
+
+//5.关闭资源
+rs.close();
+sta.close();
+con.close();
+```
 
  
 

@@ -75,7 +75,7 @@ public class TransactionManager {
 
 
 
-# :tada: 正式源码解析
+# 🎉 正式源码解析
 
 # 1 入口方法
 
@@ -83,7 +83,7 @@ public class TransactionManager {
 
 
 
-下面是是 Spring AOP 创建代理对象的入口方法：
+下面是 Spring AOP 创建代理对象的入口方法：
 
 1. 若 bean 是 AOP 基础设施类型，则直接返回
 2. 为 bean 查找合适的通知器
@@ -93,12 +93,16 @@ public class TransactionManager {
 ```java
   @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-    //bean 就是需要 被增强的类。
+    //bean 就是需要被增强的类。
         if (bean != null) {
+            //1.从缓存中找到bean的cacheKey
             Object cacheKey = getCacheKey(bean.getClass(), beanName);
-            //防止 bean 多次被增强。
+            
+            //2.如果还没有被增强过才调用wrapIfNecessary，防止bean多次被增强。
             if (!this.earlyProxyReferences.contains(cacheKey)) {
-            //如果有必要 就进行封装，有没有必要主要取决于 bean 是否需要被增强。
+            
+                //3.wrapIfNecessary主要作用就是获得当前bean的增强器，然后将
+                //增强器的数组和bean作为参    数，调用createProxy封装成一个代理对象。
                 return wrapIfNecessary(bean, beanName, cacheKey);
             }
         }
@@ -112,31 +116,40 @@ public class TransactionManager {
      *如果有必要 封装 bean
      */
 protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
-		//如果已经处理过
+		//1.如果已经处理过，直接return bean
         if (beanName != null && this.targetSourcedBeans.contains(beanName)) {
             return bean;
         }
-		//如果不需要增强 就直接返回
+		//2.如果不需要增强，就直接返回
         if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
             return bean;
         }
-        //如果是一个 组件类，组件类包括Advice，Pointcut,Advisor,AopInfrastructureBean实现类，和Aspect注解注释的类，那么就标记为不需要增强的bean。所以 切面类 自己不会被AOP 增强。
+        //如果是一个组件类，组件类包括Advice，Pointcut,Advisor实现类和Aspect注解注释的类，那么就标记为不需要增强的bean。所以切面类自己不会被AOP增强。
         if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
             this.advisedBeans.put(cacheKey, Boolean.FALSE);
             return bean;
         }
-        // getAdvicesAndAdvisorsForBean：这个方法会提取当前bean的所有增强方法，然后获取到适合的当前bean的增强方法，然后对增强方法进行排序，最后返回。 
-        Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+    
+    //正式进入逻辑
+    
+        //这个方法会获取到适合的当前bean的增强方法，对增强方法进行排序，最后返回。 
+  		Object[] specificInterceptors 
+      		= getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+    
         //如果匹配到增强器 那么就创建增强代理类。
         if (specificInterceptors != DO_NOT_PROXY) {
-            this.advisedBeans.put(cacheKey, Boolean.TRUE);
-            //创建 增强代理类
+            this.advisedBeans.put(cacheKey, Boolean.TRUE);  //标记为需要增强
+            //创建增强代理类
             Object proxy = createProxy(
-                    bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
-            this.proxyTypes.put(cacheKey, proxy.getClass());
+                    bean.getClass(), 
+                	beanName, 
+                	specificInterceptors, 
+                	new SingletonTargetSource(bean));
+            		this.proxyTypes.put(cacheKey, proxy.getClass());
             return proxy;
         }
-        this.advisedBeans.put(cacheKey, Boolean.FALSE);
+    
+        this.advisedBeans.put(cacheKey, Boolean.FALSE); //增强完毕，标记为不需要增强
         return bean;
     }
 
@@ -146,7 +159,7 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 
 
 
-# 2 筛选合适的通知器
+# 2 查找通知器
 
 Spring 先查询出所有的通知器，然后再调用 findAdvisorsThatCanApply 对通知器进行筛选。
 
@@ -169,7 +182,11 @@ protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName
      * 筛选可应用在 beanClass 上的 Advisor，通过 ClassFilter 和 MethodMatcher
      * 对目标类和方法进行匹配
      */
-    List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+    
+    //筛选合适的通知器
+    List<Advisor> eligibleAdvisors = 
+        findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+    
     // 拓展操作
     extendAdvisors(eligibleAdvisors);
     if (!eligibleAdvisors.isEmpty()) {
@@ -181,7 +198,7 @@ protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName
 
 
 
-### 2.1 查找通知器
+## 2.1 查找所有通知器
 
 > Spring 提供了两种配置 AOP 的方式，一种是通过 XML 进行配置，另一种是注解。对于两种配置方式，Spring 的处理逻辑是不同的。
 
@@ -194,8 +211,10 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 
     @Override
     protected List<Advisor> findCandidateAdvisors() {
+        
         // 调用父类方法从容器中查找所有的通知器
         List<Advisor> advisors = super.findCandidateAdvisors();
+        
         // 解析 @Aspect 注解，并构建通知器
         advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());
         return advisors;
@@ -209,7 +228,7 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 
 
 
-##### 2.1.1 通过xml查找通知器
+#### 2.1.1 通过xml查找通知器
 
 看`findAdvisorBeans`方法，从容器中查找 Advisor 类型的 bean，主要做了两件事情：
 
@@ -221,13 +240,14 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 
     private BeanFactoryAdvisorRetrievalHelper advisorRetrievalHelper;
     
-    //...
-
+    //这是父类的findCandidateAdvisors方法，本质就在调用findAdvisorBeans
     protected List<Advisor> findCandidateAdvisors() {
         return this.advisorRetrievalHelper.findAdvisorBeans();
     }
 
-    //...
+    //这个方法做了两件事：
+    //1.通过BeanFactoryUtils工具类查找到所有Advisor类型的bean（String[]）
+    //2.遍历这个beanName的字符串数组，调用this.beanFactory.getBean(name, Advisor.class)获取Advisor，然后加入到通知器的List集合，最后返回。
     public List<Advisor> findAdvisorBeans() {
     String[] advisorNames = null;
     synchronized (this) {
@@ -304,6 +324,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 4. 否则的话则调用 advisorFactory.getAdvisors 获取通知器
 
 ```java
+//注解方法要麻烦一些，除了获取beanName，还需要获取beanName的beanType
+//根据beanType判断当前bean是否是一个的 Aspect注解类，
+//若不是则不做处理，否则调用advisorFactory.getAdvisors获取通知器
 public List<Advisor> buildAspectJAdvisors() {
     List<String> aspectNames = this.aspectBeanNames;
 
@@ -389,11 +412,11 @@ public List<Advisor> buildAspectJAdvisors() {
 `getAdvisors`：
 
 1. for循环为每个方法调用getAdvisor 方法获取通知器（切点），然后存进LinkedList类型的advisors 集合。
-
 2. 完了以后调用getPointcut方法获取切点实现类（`@Pointcut("execution(* cn.wolfcode.service.*Service.*(..))")`）
 3. 最后按照注解类型生成相应的 Advice 实现类。用一个switch来判断注解类型，比如case AtBefore， case AtAfter，case AtAfterReturning，case AtAfterThrowing...
 
 ```java
+//两件事，一个是获取 AspectJ 表达式切点，另一个是创建 Advisor 实现类
 public List<Advisor> getAdvisors(MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
     // 获取 aspectClass 和 aspectName
     Class<?> aspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();
@@ -511,6 +534,114 @@ protected Object invokeAdviceMethodWithGivenArgs(Object[] args) throws Throwable
 
 
 
+## 2.2 筛选合适的通知器
+
+以下是通知器筛选的过程，筛选的工作主要由 ClassFilter 和 MethodMatcher 完成。关于 ClassFilter 和 MethodMatcher 我在[导读](http://www.coolblog.xyz/2018/06/17/Spring-AOP-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E5%AF%BC%E8%AF%BB/)一文中已经说过了，这里再说一遍吧。在 AOP 中，切点 Pointcut 是用来匹配连接点的，以 AspectJExpressionPointcut  类型的切点为例。该类型切点实现了ClassFilter 和 MethodMatcher 接口，匹配的工作则是由 AspectJ  表达式解析器复杂。除了使用 AspectJ 表达式进行匹配，Spring  还提供了基于正则表达式的切点类，以及更简单的根据方法名进行匹配的切点类。大家有兴趣的话，可以自己去了解一下，这里就不多说了。 
+
+在完成通知器的查找和筛选过程后，还需要进行最后一步处理 – 对通知器列表进行拓展。怎么拓展呢？我们一起到下一节中一探究竟吧。 
+
+```java
+//从通知器中获取类型过滤器 ClassFilter，并调用 matchers 方法进行匹配。
+//如果匹配成功就会通过反射getAllDeclaredMethods拿到类的方法数组，
+//遍历调用方法判断方法是否匹配
+protected List<Advisor> findAdvisorsThatCanApply(
+        List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
+
+    ProxyCreationContext.setCurrentProxiedBeanName(beanName);
+    try {
+        // 调用重载方法
+        return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
+    }
+    finally {
+        ProxyCreationContext.setCurrentProxiedBeanName(null);
+    }
+}
+
+public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
+    if (candidateAdvisors.isEmpty()) {
+        return candidateAdvisors;
+    }
+    List<Advisor> eligibleAdvisors = new LinkedList<Advisor>();
+    for (Advisor candidate : candidateAdvisors) {
+        // 筛选 IntroductionAdvisor 类型的通知器
+        if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
+            eligibleAdvisors.add(candidate);
+        }
+    }
+    boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+    for (Advisor candidate : candidateAdvisors) {
+        if (candidate instanceof IntroductionAdvisor) {
+            continue;
+        }
+
+        // 筛选普通类型的通知器
+        if (canApply(candidate, clazz, hasIntroductions)) {
+            eligibleAdvisors.add(candidate);
+        }
+    }
+    return eligibleAdvisors;
+}
+
+public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+    if (advisor instanceof IntroductionAdvisor) {
+        /*
+         * 从通知器中获取类型过滤器 ClassFilter，并调用 matchers 方法进行匹配。
+         * ClassFilter 接口的实现类 AspectJExpressionPointcut 为例，该类的
+         * 匹配工作由 AspectJ 表达式解析器负责，具体匹配细节这个就没法分析了，我
+         * AspectJ 表达式的工作流程不是很熟
+         */
+        return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
+    }
+    else if (advisor instanceof PointcutAdvisor) {
+        PointcutAdvisor pca = (PointcutAdvisor) advisor;
+        // 对于普通类型的通知器，这里继续调用重载方法进行筛选
+        return canApply(pca.getPointcut(), targetClass, hasIntroductions);
+    }
+    else {
+        return true;
+    }
+}
+
+public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
+    Assert.notNull(pc, "Pointcut must not be null");
+    // 使用 ClassFilter 匹配 class
+    if (!pc.getClassFilter().matches(targetClass)) {
+        return false;
+    }
+
+    MethodMatcher methodMatcher = pc.getMethodMatcher();
+    if (methodMatcher == MethodMatcher.TRUE) {
+        return true;
+    }
+
+    IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
+    if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
+        introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
+    }
+
+    /*
+     * 查找当前类及其父类（以及父类的父类等等）所实现的接口，由于接口中的方法是 public，
+     * 所以当前类可以继承其父类，和父类的父类中所有的接口方法
+     */ 
+    Set<Class<?>> classes = new LinkedHashSet<Class<?>>(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
+    classes.add(targetClass);
+    for (Class<?> clazz : classes) {
+        // 获取当前类的方法列表，包括从父类中继承的方法
+        Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
+        for (Method method : methods) {
+            // 使用 methodMatcher 匹配方法，匹配成功即可立即返回
+            if ((introductionAwareMethodMatcher != null &&
+                    introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions)) ||
+                    methodMatcher.matches(method, targetClass)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+```
+
 
 
 # 3 创建代理对象
@@ -527,7 +658,7 @@ public interface AopProxy {
 }
 ```
 
-![](./assets/3.4.jpg)
+![](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/spring/assets/3.4.jpg)
 
 
 
@@ -549,7 +680,10 @@ Spring 在为目标 bean 创建代理的过程中，要根据 bean 是否实现�
 	 */
 
 	protected Object createProxy(
-			Class<?> beanClass, String beanName, Object[] specificInterceptors, TargetSource targetSource) {
+			Class<?> beanClass, 
+        	String beanName, 
+        	Object[] specificInterceptors, 
+        	TargetSource targetSource) {
  
         //创建代理工厂
 		ProxyFactory proxyFactory = new ProxyFactory();
@@ -557,22 +691,35 @@ Spring 在为目标 bean 创建代理的过程中，要根据 bean 是否实现�
         //this应该是当前正在实例化的Bean对象
 		proxyFactory.copyFrom(this);
  
-		if (!shouldProxyTargetClass(beanClass, beanName)) {
-			
-			Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, this.proxyClassLoader);
-			for (Class<?> targetInterface : targetInterfaces) {
-				proxyFactory.addInterface(targetInterface);
-			}
-		}
- 		
+          /*
+     * 默认配置下，或用户显式配置 proxy-target-class = "false" 时，（false表示jdk）
+     * proxyFactory.isProxyTargetClass()为false表示配置为jdk。
+     */
+    if (!proxyFactory.isProxyTargetClass()) {
+        if (shouldProxyTargetClass(beanClass, beanName)) {
+            proxyFactory.setProxyTargetClass(true);
+        }
+        else {
+            /*
+             * 检测 beanClass 是否实现了接口，若未实现，则将 
+             * proxyFactory 的成员变量 proxyTargetClass 设为 true
+             */ 
+            evaluateProxyInterfaces(beanClass, proxyFactory);
+        }
+    }
+        
+        
         //获取当前bean的增强器advisors
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
+        
         //把当前获取到的增强器添加到代理工厂proxyFactory
 		for (Advisor advisor : advisors) {
 			proxyFactory.addAdvisor(advisor);
 		}
+        
  		//设置当前的代理工厂的代理目标对象为当前bean,这个对象是单例处理的。
 		proxyFactory.setTargetSource(targetSource);
+        
 		customizeProxyFactory(proxyFactory);
  
 		proxyFactory.setFrozen(this.freezeProxy);
@@ -582,6 +729,7 @@ Spring 在为目标 bean 创建代理的过程中，要根据 bean 是否实现�
  		//获取 AopProxy,AopProxy有JDK实现和 Cglib实现两种。
 		return proxyFactory.getProxy(this.proxyClassLoader);
 	}
+
 ```
 
 
@@ -599,22 +747,28 @@ Spring 在为目标 bean 创建代理的过程中，要根据 bean 是否实现�
 
 ```java
 public Object getProxy(ClassLoader classLoader) {
-    //先获取 AopProxy,AopProxy有JDK实现和 Cglib实现两种。
+    
+    	//先获取 AopProxy,AopProxy有JDK实现和 Cglib实现两种。
         return createAopProxy().getProxy(classLoader);
+    
 }
 
+//主要通过判断是否采用了激进的优化策略，是否实现接口等判断采用jdk还是cdlib
+//如果满足jdk条件就 return new JdkDynamicAopProxy(config);
+//否则return new ObjenesisCglibAopProxy(config);
 public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
     //判断采用什么代理类型。
-    //Optimize 是否采用了 激进的优化策略，该优化仅支持 Cglib代理
-    //ProxyTargetClass 代理目标类，代理目标类 就是采用 子类继承的方式创建代理，所以也是Cglib代理，可以通过
-    // 判断是否是实现了接口，如果没有必须采用Cglib代理。
+    //1.Optimize 是否采用了激进的优化策略，该优化仅支持Cglib代理
+    //2.ProxyTargetClass代理目标类，就是采用子类继承的方式创建代理，所以也是Cglib代理
+    //3.没有实现接口
+    //都不满足就用jdk代理
         if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
             Class<?> targetClass = config.getTargetClass();
             if (targetClass == null) {
                 throw new AopConfigException("TargetSource cannot determine target class: " +
                         "Either an interface or a target is required for proxy creation.");
             }
-           // 如果目标对象是接口 采用JDK代理。
+           // 如果目标对象是接口采用JDK代理
             if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
                 return new JdkDynamicAopProxy(config);
             }
@@ -622,7 +776,7 @@ public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException 
             return new ObjenesisCglibAopProxy(config);
         }
         else {
-            return new JdkDynamicAopProxy(config);
+            return new JdkDynamicAopProxy(config); // 都不满足用jdk代理
         }
     }
 
@@ -636,7 +790,7 @@ public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException 
 
 现在我们的得到了 bean 的代理对象，且通知也以合适的方式插在了目标方法的前后。接下来要做的事情，就是执行通知逻辑了 .当目标方法被多个通知匹配到时，Spring 通过引入拦截器链来保证每个通知的正常执行。 
 
->插一个基础知识-expose-proxy 
+> 插一个基础知识-expose-proxy 
 
 Spring 引入 expose-proxy 特性是为了解决**目标方法调用同对象中其他方法时，其他方法的切面逻辑无法执行的问题**。 
 
@@ -650,7 +804,7 @@ Spring 引入 expose-proxy 特性是为了解决**目标方法调用同对象中
 
 流程：
 
-1. 检测 expose-proxy 是否为 true，若为 true，则暴露代理对象
+1. 检测 expose-proxy 是否为 true，若为 true，则暴露代理对象（expose-proxy是为了解决**目标方法调用同对象中其他方法时，其他方法的切面逻辑无法执行的问题**。 ）
 2. 获取适合当前方法的拦截器
 3. 如果拦截器链为空，则直接通过反射执行目标方法
 4. 若拦截器链不为空，则创建方法调用 ReflectiveMethodInvocation 对象
@@ -659,8 +813,11 @@ Spring 引入 expose-proxy 特性是为了解决**目标方法调用同对象中
 
 在以上6步中，我们重点关注第2步和第5步中的逻辑。第2步用于获取拦截器链，第5步则是启动拦截器链。下面先来分析获取拦截器链的过程。
 
+> invoke: JdkDynamicAopProxy类的唯一方法，用于实现增强方法的执行
+
 ```java
 //method是要增强的方法，proxy是代理类
+//JdkDynamicAopProxy的唯一方法invoke
 @Override
 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     //省略了 对 hashCode equals 等方法的处理....
@@ -676,7 +833,7 @@ public Object invoke(Object proxy, Method method, Object[] args) throws Throwabl
             if (target != null) {
                 targetClass = target.getClass();
             }
-      // 2.获取适合当前方法的拦截器
+      // 2.获取适合当前方法的拦截器链
       List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
      //3.如果拦截器链为空，则直接通过反射执行目标方法
       if (chain.isEmpty()) {
@@ -697,6 +854,35 @@ public Object invoke(Object proxy, Method method, Object[] args) throws Throwabl
 ```
 
  
+
+```java
+//method是要增强的方法，proxy是代理类
+//JdkDynamicAopProxy的唯一方法invoke
+@Override
+public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+   
+            // 获取目标对象类targetClass
+            target = targetSource.getTarget();
+            if (target != null) {
+                targetClass = target.getClass();
+            }
+      // 2.获取适合当前方法的拦截器链
+      List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
+     //3.如果拦截器链为空，则直接通过反射执行目标方法
+      if (chain.isEmpty()) {
+         Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
+         retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
+      }
+      else {    
+          //4.若拦截器链不为空，则创建方法调用 ReflectiveMethodInvocation 对象
+         invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
+          //5.调用 ReflectiveMethodInvocation 对象的 proceed() 方法启动拦截器链
+         retVal = invocation.proceed();
+      }
+    //6.处理返回值，并返回该值
+      return retVal;
+}
+```
 
 
 
@@ -730,7 +916,7 @@ public Object proceed() throws Throwable {
             }
         }
         else {
-            //如果 MethodInterceptor 
+              //调用拦截器逻辑，并传递 ReflectiveMethodInvocation 对象
             return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
         }
     }
@@ -740,117 +926,55 @@ public Object proceed() throws Throwable {
 
 
 
-# 4 总结
+> 前置后置环绕各种代码的实现-invoke
 
-**1.postProcessAfterInitialization(Object bean, String beanName)：**
-
-> 主要作用是在bean实例化的时候调用此方法，判断bean是否需要被包装，如果需要就调用wrapIfNecessary方法。
-
-容器启动，bean实例化之前经过此方法。使用cacheKey判断bean是否被增强过，以防止bean多次被增强。若没有被增强过，`return wrapIfNecessary(bean, beanName, cacheKey)`;进行代理包装。
-
-
-
-**2.wrapIfNecessary(Object bean, String beanName, Object cacheKey)：**
-
-> 主要作用就是获得当前bean的增强器，然后将增强器的数组和bean作为参数，调用createProxy封装成一个代理对象。
-
-1. 通过`Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);`方法获取到适合的当前bean的增强方法，然后对增强方法进行排序，最后返回。 
-
-   `getAdvicesAndAdvisorsForBean()`具体实现：里面的`findEligibleAdvisors方法`
-
-   分三步：
-
-   - 获取所有的增强器：`this.aspectJAdvisorsBuilder.buildAspectJAdvisors()`方法，获取容器中已经注册的BeanNames，遍历 所有已经注册的Bean,找出所有 @Aspecj 注解申明的切面类，构建增强器
-   - 匹配合适的增强器
-   - 对增强器排序
-   - 返回增强器
-
-   
-
-   
-
-2. 如果匹配到了增强器，创建增强代理类：
+这里以前置MethodInterceptor（MethodBeforeAdviceInterceptor）的 为例：
 
 ```java
-  if (specificInterceptors != DO_NOT_PROXY) {
-            this.advisedBeans.put(cacheKey, Boolean.TRUE);
-            //创建 增强代理类
-            Object proxy = createProxy(bean.getClass(),
-                                       beanName, 
-                                       specificInterceptors, //传入增强器
-                                       new SingletonTargetSource(bean));//单例
-            this.proxyTypes.put(cacheKey, proxy.getClass());
-            return proxy;
-        }
-        this.advisedBeans.put(cacheKey, Boolean.FALSE);
+public class MethodBeforeAdviceInterceptor implements MethodInterceptor, Serializable {
+    
+    /** 前置通知 */
+    private MethodBeforeAdvice advice;
+
+    public MethodBeforeAdviceInterceptor(MethodBeforeAdvice advice) {
+        Assert.notNull(advice, "Advice must not be null");
+        this.advice = advice;
+    }
+
+    @Override
+    public Object invoke(MethodInvocation mi) throws Throwable {
+        // 执行前置通知逻辑
+        this.advice.before(mi.getMethod(), mi.getArguments(), mi.getThis());
+        // 通过 MethodInvocation 调用下一个拦截器，若所有拦截器均执行完，则调用目标方法
+        return mi.proceed();
+    }
+}
 ```
 
-
-
-**3.调用createProxy方法，创建代理**
-
-> 主要作用就是将增强器数组，代理目标对象等信息添加进proxyFactory，然后调用return proxyFactory.getProxy(this.proxyClassLoader)
-
-先创建代理工厂proxyFactory，beanClass和beanName用于判断当前Bean是否需要代理，然后获取当前bean 的增强器advisors，把当前获取到的增强器添加到代理工厂proxyFactory，然后设置当前的代理工厂的代理目标对象为当前bean。
-
-最后`return proxyFactory.getProxy(this.proxyClassLoader);`调用getProxy
-
-
-
-**4.proxyFactory.getProxy()**
-
-> 主要作用就是调用其他两个方法，一个是createAopProxy，一个是getProxy
-
-通过此方法调用`return createAopProxy().getProxy(classLoader);`
-
-
-
-**5.createAopProxy()**
-
-> 主要用于判断采取JDK代理 或Cglib代理,根据情况创建合适的代理。
-
-如果符合jdk动态代理的条件： `return new JdkDynamicAopProxy(config);`
-
-
-
-**6.new JdkDynamicAopProxy(config)**
-
-> JdkDynamicAopProxy 是final类并且实现了InvocationHandler 接口，`invoke`该接口中唯一一个定义的方法。
-
-
-
-**7.getProxy**
-
-获取代理类。
-
- `return Proxy.newProxyInstance(classLoader, proxiedInterfaces, this);`
-
-其中InvocationHanler 是 this,就是JdkDynamicAopProxy。
-
-
-
-**8.invoke**
-
-> 具体实现AOP的核心方法。增强器包括了before，after，around等等。
-
-JdkDynamicAopProxy类的唯一方法，用于实现增强方法的执行
-
-执行拦截器链：
+后置MethodInterceptor（AspectJAfterAdvice） ：又去调用proceed递归方法，由finally调用最后的后置方法
 
 ```java
- invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
-
- retVal = invocation.proceed();
-
-return retVal；
+@Override
+  public Object invoke(MethodInvocation mi) throws Throwable {
+      try {
+            //继续调用一下拦截器。
+          return mi.proceed();
+      }
+      finally {
+            //在finally 里面激活 后置增强方法
+          invokeAdviceMethod(getJoinPointMatch(), null, null);
+      }
+  }
 
 ```
 
 
 
-**9.ReflectiveMethodInvocation**
+> 来看一下调用通知方法的逻辑，proceed很明显是递归调用，等到currentInterceptorIndex == 拦截器
 
-使用ReflectiveMethodInvocation 对拦截器链进行封装。通过`proceed()`方法触发拦截器开始执行。而且是递归执行。
+![](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/spring/assets/3.5.jpg)
+
+
 
 
 

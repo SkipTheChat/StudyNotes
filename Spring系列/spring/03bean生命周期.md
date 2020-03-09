@@ -6,7 +6,7 @@
 
 ## 1 bean的作用域
 
-![img](./assets/3.1)
+![img](./assets/3.1.png)
 
 
 
@@ -251,6 +251,12 @@ public class CustomerBeanPostProcessor implements BeanPostProcessor {
 
 ![](./assets/3.3.png)
 
+这里说的初始化之前初始化完毕，指的是下面两种：
+
+1）bean实现了InitializingBean接口，对应的方法为`afterPropertiesSet`
+
+2）在bean定义的时候，通过`init-method`设置的方法
+
 
 
 > Spring Bean的生命周期
@@ -364,25 +370,6 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 ```
 
 
-
-
-
-**BeanPostProcessor**：作用于初始化阶段的前后
-
-而且InstantiationAwareBeanPostProcessor继承了BeanPostProcessor：
-
-```java
-InstantiationAwareBeanPostProcessor extends BeanPostProcessor
-```
-
-
-
-2.Aware扩展类
-
-Aware类型的接口的作用就是让我们能够拿到Spring容器中的一些资源。
-
-- BeanNameAware：可以拿到beanname，用setBeanName可以为bean注入属性
-- BeanFactoryAware：用setBeanFactory可以为bean注入属性
 
 
 

@@ -267,6 +267,27 @@ static final class Node {
 
 ![](../assets/1.31.jpg)
 
+
+
+> 方法调用图
+
+1.**acquire**：`if (!tryAcquire(arg) &&acquireQueued(addWaiter(Node.EXCLUSIVE), arg))` ，调用 tryAcquire 方法尝试获取同步状态，获取成功，直接返回，获取失败，将线程封装到节点中，并将节点入队
+
+2.**addWaiter**：tail!=null时，直接向同步队列尾部添加一个节点
+
+3.**enq**：当tail == null,那么无法使用快速插入节点，调用 enq 方法，通过 CAS + 自旋的方式插入节点到队尾。注意：当入队的时候，要先将node（新的尾节点）的prev指向旧的尾节点，然后再设置node为尾节点，避免队列和尾节点脱离导致遍历出错的问题。
+
+4.**acquireQueued**：`addWaiter(Node.EXCLUSIVE), arg)`添加尾节点成功之后，返回尾节点作为acquireQueued方法的参数。
+
+* 进入自旋状态，获取当前node的前驱节点，前驱节点如果是头结点，并且tryAcquire为true，`if (p == head && tryAcquire(arg))` ，那么就可以将自己设为头节点，原头节点出队。那么什么时候`tryAcquire`为true呢？当前驱节点释放同步状态后`tryAcquire`就会返回true。
+*  如果前驱节点不是head，那么就要判断自己是否需要阻塞了。`if (shouldParkAfterFailedAcquire(p, node) &&parkAndCheckInterrupt())`，避免浪费资源
+* 自旋过程如果出现异常会调用fianlly，finally中调用 cancelAcquire(node)取消节点。
+
+5.**parkAndCheckInterrupt**：这个方法调用park方法阻塞，然后return一个Thread.interrupted();
+ 
+
+![1583746635280](../assets/5.9.png)
+
 ```java
 /**
  * 该方法将会调用子类复写的 tryAcquire 方法获取同步状态，

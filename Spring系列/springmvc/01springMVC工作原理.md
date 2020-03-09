@@ -215,6 +215,10 @@ public class HelloController {
 
 * 处理器映射器：配置在mvc.xml中。
 
+（3）HandlerMapping 找到具体的处理器(通过 XML 或注解配置)，生成处理器对象及处理器拦截器(如果 
+
+有)，再一起返回给 DispatcherServlet。 
+
 ```xml
 <!--1.处理器映射器-->	
 <!-- 
@@ -234,11 +238,7 @@ public class HelloController {
 
 > 2.处理器适配器
 
-（1）HandlerMapping 找到具体的处理器(通过 XML 或注解配置)，生成处理器对象及处理器拦截器(如果 
-
-有)，再一起返回给 DispatcherServlet。 
-
-（2）DispatcherServlet 调用 HandlerAdapter（处理器适配器）。 
+（1）DispatcherServlet 调用 HandlerAdapter（处理器适配器）。 
 
 ```xml
 <!--处理器适配器  -->
@@ -252,19 +252,21 @@ public class HelloController {
 <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"/>
 ```
 
-（3）HandlerAdapter 经过适配调用具体的处理器的某个方法（Handler/Controller）。 
+（2）HandlerAdapter 经过适配调用具体的处理器的某个方法（Handler/Controller）。 
 
-（4）Controller 执行完成返回 ModelAndView 对象。 
+（3）Controller 执行完成返回 ModelAndView 对象。 
 
-（5）HandlerAdapter 将 Controller 返回的 ModelAndView 再返回给 DispatcherServlet。 
+（4）HandlerAdapter 将 Controller 返回的 ModelAndView 再返回给 DispatcherServlet。 
 
-（6）DispatcherServlet 将 ModelAndView 传给 ViewReslover（视图解析器）。 
+
 
 
 
 > 3.视图解析器
 
-（1）ViewReslover 解析后返回具体 View（视图）。 
+（1）DispatcherServlet 将 ModelAndView 传给 ViewReslover（视图解析器）。 
+
+（2）ViewReslover 解析后返回具体 View（视图）。 
 
 ```xml
 <!--3:视图解析器  -->
@@ -272,9 +274,9 @@ public class HelloController {
 <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver"/>
 ```
 
-（2）DispatcherServlet 根据 View 进行渲染视图（即将模型数据填充至视图中）。 
+（3）DispatcherServlet 根据 View 进行渲染视图（即将模型数据填充至视图中）。 
 
-（3）DispatcherServlet 响应用户。
+（4）DispatcherServlet 响应用户。
 
 
 
