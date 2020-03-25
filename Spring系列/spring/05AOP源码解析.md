@@ -1,3 +1,5 @@
+![祭图](./assets/5.1.jpg)
+
 [Spring AOP 源码分析系列文章导读](http://www.coolblog.xyz/2018/06/17/Spring-AOP-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E7%B3%BB%E5%88%97%E6%96%87%E7%AB%A0%E5%AF%BC%E8%AF%BB/)
 
 [Spring AOP 源码分析 - 筛选合适的通知器](http://www.tianxiaobo.com/2018/06/20/Spring-AOP-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-%E7%AD%9B%E9%80%89%E5%90%88%E9%80%82%E7%9A%84%E9%80%9A%E7%9F%A5%E5%99%A8/)
@@ -6,7 +8,7 @@
 
 [Spring AOP 源码分析 - 拦截器链的执行过程](http://www.coolblog.xyz/2018/06/22/Spring-AOP-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-%E6%8B%A6%E6%88%AA%E5%99%A8%E9%93%BE%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B/)
 
-> 先放一个AOP开发部分代码
+> 先放一个AOP开发部分代码-注解
 
 ```java
 //用于增强的类需要配Conponent和Aspect注解
@@ -69,6 +71,58 @@ public class TransactionManager {
 	<!-- AOP注解解析器 -->
 	<!-- proxy-target-class="true"表示使用JDK，JDK动态代理需要实现接口 -->
 	<aop:aspectj-autoproxy proxy-target-class="false"/>
+```
+
+
+
+> xml
+
+```java
+public class TransctionManager {
+    public void begin() {
+        System.out.println("开启事务");
+    }
+    public void commit() {
+        System.out.println("提交事务");
+    }
+    public void close() {
+        System.out.println("释放资源");
+    }
+    public void rollback() {
+        System.out.println("回滚事务");
+    }
+    public Object around() {
+        Object ret = null;
+        System.out.println("开启事务");
+        try {
+            //执行目标方法
+            System.out.println("执行目标方法");
+            System.out.println("提交事务");
+        } catch (Throwable ex) {
+            System.out.println("回滚事务");
+        } finally {
+            System.out.println("释放资源");
+        }
+	return ret;
+    }
+}
+```
+
+```xml
+<bean id="transctionManager" class="cn.wolfcode.wms.tx.TransctionManager" />
+    
+<aop:config>	
+    <aop:aspect ref="transctionManager">
+   <!--pointcut:切入点，哪些包中的哪些类中的哪些方法，可认为是连接点的集合。-->
+        <aop:pointcut expression="
+        execution(* cn.wolfcode.wms.service.*Service.*(..))" id="txPoint" />
+            <aop:before method="begin" pointcut-ref="txPoint" />
+            <aop:after-returning method="commit" pointcut-ref="txPoint" />
+            <aop:after-throwing method="rollback" pointcut-ref="txPoint" />
+            <aop:after method="close" pointcut-ref="txPoint" />
+            <aop:around method="around" pointcut-ref="txPoint"/>
+    </aop:aspect>
+</aop:config>
 ```
 
 

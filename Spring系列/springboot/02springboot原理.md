@@ -77,6 +77,18 @@ public @interface EnableAutoConfiguration {
 
 查看AutoConfigurationImportSelector源码：看重要方法SpringFactoriesLoader（Spring框架原有的一个工具类 ）
 
+
+
+1.通过`SpringFactoriesLoader`从`/META-INF/spring.factories`文件中读取`XXXAutoConfiguration` 
+
+2.然后通过反射实例化为对应的标注了@Configuration的JavaConfig形式的IoC容器配置bean。
+
+3.这些`XXXAutoConfiguration`的bean会依次执行并判断是否需要创建对应的bean注入到Spring容器中。
+
+4.在每个`XXXAutoConfiguration`类中，都会利用多种类型的条件注解@ConditionOnXXX对当前的应用环境做判断，如应用程序是否为Web应用、classpath路径上是否包含对应的类、Spring容器中是否已经包含了对应类型的bean。如果判断条件都成立，XXXAutoConfiguration就会认为需要向Spring容器中注入这个bean，否则就忽略。
+
+
+
 ```java
 public String[] selectImports(AnnotationMetadata annotationMetadata) {
         ... ... ...

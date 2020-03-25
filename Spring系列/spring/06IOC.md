@@ -1308,6 +1308,8 @@ protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd
 
 # 4 循环依赖的解决办法
 
+[博客](https://zhuanlan.zhihu.com/p/84267654)
+
 > 循环依赖
 
 ```java
