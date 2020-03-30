@@ -301,7 +301,7 @@ class Girl extends Person {
  如调用如下:
 
 ```java
-lass Party {
+class Party {
     void happyHour() {
         Person girl = new Girl();
         girl.speak();
