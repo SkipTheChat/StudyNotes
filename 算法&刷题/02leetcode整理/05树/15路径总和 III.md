@@ -57,30 +57,31 @@ root = [10,5,-3,3,2,null,11,3,-2,null,1], sum = 8
  * }
  */
 class Solution {
-      public int pathSum(TreeNode root, int sum) {
-        return pathSum(root, sum, new int[1000], 0);
+    int count = 0;
+    public int pathSum(TreeNode root, int sum) {
+        help(root,sum,new int[1000],0);
+        return count;
     }
 
-    public int pathSum(TreeNode root, int sum, int[] array/*保存一路的路径节点*/, int p/*当前节点索引*/) {
-        if (root == null) {
-            return 0;
-        }
-        int tmp = root.val;
-        int n = root.val == sum ? 1 : 0; //判断当前值是否等于sum
-        for (int i = p - 1; i >= 0; i--) { //判断从当前开始往上追寻是否有符合的路径
-            tmp += array[i];
-            if (tmp == sum) {
-                n++;
+    public void help(TreeNode root,
+                     int sum,
+                     int[] path, //保存一路的路径节点
+                     int index){ //数组的最后一位索引
+        if(root == null) return;
+        path[index] = root.val;
+        int total = 0;
+
+        for(int i = index;i >= 0;i--){ //从尾到头遍历当前路径节点数组，如果有符合的路径总和就count++
+            total += path[i];
+            if(total == sum){
+                count++;
             }
         }
-        array[p] = root.val;
-        int n1 = pathSum(root.left, sum, array, p + 1); //寻找左树的所有路径
-        int n2 = pathSum(root.right, sum, array, p + 1);//寻找右树的所有路径
-        return n + n1 + n2;
+
+        help(root.left,sum,path,index + 1);
+        help(root.right,sum,path,index + 1);
     }
 }
 ```
 
 
-
-### 其他优秀解答
