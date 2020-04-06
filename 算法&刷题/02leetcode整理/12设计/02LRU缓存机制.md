@@ -50,97 +50,97 @@ import java.util.Hashtable;
 public class LRUCache {
 
     //定义双端链表
-  class DLinkedNode {
-    int key;
-    int value;
-    DLinkedNode prev;
-    DLinkedNode next;
-  }
+    class DLinkedNode {
+        int key;
+        int value;
+        DLinkedNode prev;
+        DLinkedNode next;
+    }
 
-  private void addNode(DLinkedNode node) {  //插进头节点后边
-    node.prev = head;
-    node.next = head.next;
+    private void addNode(DLinkedNode node) {  //插进头节点后边
+        node.prev = head;
+        node.next = head.next;
 
-    head.next.prev = node;
-    head.next = node;
-  }
+        head.next.prev = node;
+        head.next = node;
+    }
 
-  private void removeNode(DLinkedNode node){
-    DLinkedNode prev = node.prev; //获取node前一个节点
-    DLinkedNode next = node.next; //获取node后一个节点
+    private void removeNode(DLinkedNode node){
+        DLinkedNode prev = node.prev; //获取node前一个节点
+        DLinkedNode next = node.next; //获取node后一个节点
 
-    prev.next = next;
-    next.prev = prev;
-  }
+        prev.next = next;
+        next.prev = prev;
+    }
 
-  private void moveToHead(DLinkedNode node){ //将node移到head后面
-    removeNode(node);
-    addNode(node);
-  }
+    private void moveToHead(DLinkedNode node){ //将node移到head后面
+        removeNode(node);
+        addNode(node);
+    }
 
-  private DLinkedNode popTail() {	//删除最后一个节点
-    DLinkedNode res = tail.prev;
-    removeNode(res);
-    return res;
-  }
+    private DLinkedNode popTail() {	//删除最后一个节点
+        DLinkedNode res = tail.prev;
+        removeNode(res);
+        return res;
+    }
 
-  private Hashtable<Integer, DLinkedNode> cache = new Hashtable<Integer, DLinkedNode>();
-  private int size; //元素数量
-  private int capacity; //容量
-  private DLinkedNode head, tail;
+    private Hashtable<Integer, DLinkedNode> cache = new Hashtable<Integer, DLinkedNode>();
+    private int size; //元素数量
+    private int capacity; //容量
+    private DLinkedNode head, tail;
 
-  public LRUCache(int capacity) { //初始化
-    this.size = 0;
-    this.capacity = capacity;
+    public LRUCache(int capacity) { //初始化
+        this.size = 0;
+        this.capacity = capacity;
 
-    head = new DLinkedNode();
-    // head.prev = null;
+        head = new DLinkedNode();
+        // head.prev = null;
 
-    tail = new DLinkedNode();
-    // tail.next = null;
+        tail = new DLinkedNode();
+        // tail.next = null;
 
-    head.next = tail;
-    tail.prev = head;
-  }
+        head.next = tail;
+        tail.prev = head;
+    }
 
     //1.get
-  public int get(int key) {
-    DLinkedNode node = cache.get(key);
-    if (node == null) return -1;
+    public int get(int key) {
+        DLinkedNode node = cache.get(key);
+        if (node == null) return -1;
 
-    moveToHead(node); //移到队头
+        moveToHead(node); //移到队头
 
-    return node.value;
-  }
+        return node.value;
+    }
 
     //2.put
-  public void put(int key, int value) {
-    DLinkedNode node = cache.get(key);
-	
-     
-    if(node == null) { //node == null,放进hash表
-      DLinkedNode newNode = new DLinkedNode();
-      newNode.key = key;
-      newNode.value = value;
+    public void put(int key, int value) {
+        DLinkedNode node = cache.get(key);
 
-      cache.put(key, newNode);
-      addNode(newNode);
 
-      ++size;
+        if(node == null) { //node == null,放进hash表
+            DLinkedNode newNode = new DLinkedNode();
+            newNode.key = key;
+            newNode.value = value;
 
-        //超出容量的话，就删除队尾元素
-      if(size > capacity) {
-        DLinkedNode tail = popTail();
-        cache.remove(tail.key);
-        --size;
-      }
-    } else { //node！=null，更新元素并且移到队头
-      node.value = value;
-      moveToHead(node);
+            cache.put(key, newNode);
+            addNode(newNode);
+
+            ++size;
+
+            //超出容量的话，就删除队尾元素
+            if(size > capacity) {
+                // pop the tail
+                DLinkedNode tail = popTail();
+                cache.remove(tail.key);
+                --size;
+            }
+        } else { //node！=null，更新元素并且移到队头
+            node.value = value;
+            moveToHead(node);
+        }
     }
-  }
 }
-
 
 ```
 

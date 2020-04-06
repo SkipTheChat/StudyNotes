@@ -1,3 +1,7 @@
+https://blog.csdn.net/achuo/article/details/87865141
+
+https://www.cnblogs.com/heqiyoujing/p/11146178.html
+
 用于全文检索。
 
 - 反向索引又叫倒排索引，是根据文章内容中的关键字建立索引。
