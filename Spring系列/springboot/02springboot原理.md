@@ -219,7 +219,7 @@ public class ServerProperties {
 
 2.再来看一个我们熟悉的，例如SpringMVC，查看mvc 的自动配置类：WebMVCAutoConfiguration（在spring.factories中加载）
 
-  ![1527933162533](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933162533.png)
+   ![1527933162533](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933162533.png)
 
 打开WebMvcAutoConfiguration：
 
