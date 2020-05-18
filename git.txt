@@ -1,0 +1,61 @@
+1.push代码：
+	进入命令行
+	git init #刚创建仓库的时候
+	git add . 
+	git commit -m "随便写"
+	git remote add origin git@github.com:cristinejssssss/leyou.git  #刚创建仓库的时候要写，是写明push地址的命令
+	git push -u origin master
+
+
+	git remote -v (查看源)
+	git remote rm origin(删除源)
+总结：
+无论是修改了文件还是删除添加，如果不是第一次push，直接三行命令
+git add . 
+git commit -m ""
+git push -u origin master
+
+
+2.拉取代码：
+	git clone git@github.com:cristinejssssss/pinyougou.git
+
+
+3.创建远程分支（最多三条命令）
+
+
+------> git checkout -b dev (创建一个分支)     等价于命令：git branch [branch name]（创建）+git checkout [branch name]（切换）
+	 git branch（查看当前分支）
+	git add .
+	git commit -m " asd "
+	git push origin HEAD -u (提交到当前远程分支)
+	
+
+4.拉取指定分支
+	git clone -b [分支名称] git@github.com:cristinejssssss/pinyougou.git
+
+
+5.合并分支
+	1.切换到master分支
+
+	git checkout master
+
+
+	2.本地的dev合并到master上（如果遇到冲突解决完后再次提交即可）
+
+	git merge [分支名称]
+
+
+	3.推送到远程的master上
+
+	git push origin master         
+
+
+
+6.查看分支
+	 git branch -a(查看所有分支包括本地分支和远程分支).
+     	 git branch -r(查看远程分支).
+
+7.删除分支
+	git branch -d [branch name] （本地分支）
+	git push origin :[branch name] （远程分支）
+	
