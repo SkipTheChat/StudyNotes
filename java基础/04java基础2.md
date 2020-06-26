@@ -689,11 +689,11 @@ List<String> list = new ArrayList<String>();
 如何实现Java序列化（确保对象实现serializable接口），ObjectOutputStream：
 
 ```java
-        // ObjectOutputStream 对象输出流，将 flyPig 对象存储到E盘的 flyPig.txt 文件中，完成对 flyPig 对象的序列化操作
-        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File("d:/flyPig.txt")));
-        oos.writeObject(flyPig);
-        System.out.println("FlyPig 对象序列化成功！");
-        oos.close();
+// ObjectOutputStream 对象输出流，将 flyPig 对象存储到E盘的 flyPig.txt 文件中，完成对 flyPig 对象的序列化操作
+ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File("d:/flyPig.txt")));
+oos.writeObject(flyPig);
+System.out.println("FlyPig 对象序列化成功！");
+oos.close();
 ```
 
 
@@ -701,9 +701,9 @@ List<String> list = new ArrayList<String>();
 反序列化，ObjectInputStream：
 
 ```java
-       ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File("d:/flyPig.txt")));
-        FlyPig person = (FlyPig) ois.readObject();
-        System.out.println("FlyPig 对象反序列化成功！");
+ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File("d:/flyPig.txt")));
+FlyPig person = (FlyPig) ois.readObject();
+System.out.println("FlyPig 对象反序列化成功！");
 ```
 
 注意：
@@ -947,7 +947,7 @@ public Object deepClone() throws Exception{
 ## 9.1 种类 
 
 * 按功能来分：输入流（input）、输出流（output）。
-  * 输入流是指程序从数据源中读取数据。只进行读操作；
+  * 输入流是指程序从数据源中读取数据。只进行读操作； 
   * 输出流是指将数据从程序中写到指定的文件中；
 * 按类型来分：字节流 和 字符流。
 
@@ -1110,8 +1110,6 @@ writeUTF(String);//按照utf-8修改版将字符数据进行存储，只能通�
 
 
 #### 9.2.3.2 同步非阻塞
-
-> eg：NIO
 
 在linux系统下，可以通过设置socket使其变为non-blocking。
 
