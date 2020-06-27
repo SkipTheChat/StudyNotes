@@ -1,3 +1,5 @@
+[可以看博客不看笔记哦](https://blog.csdn.net/caoxiaohong1005/article/details/80039656)
+
 ## 1 工厂设计模式
 
 Spring使用工厂模式可以通过 `BeanFactory` 或 `ApplicationContext` 创建 bean 对象。
