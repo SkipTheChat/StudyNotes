@@ -1477,6 +1477,203 @@ AIO属于异步模型，用户线程可以同时处理别的事情，我们怎�
 
 
 
-# 10 Collections 工具类和 Arrays 工具类常见方法总结
+# 10 jdk8新特性
 
-[博客](https://gitee.com/SnailClimb/JavaGuide/blob/master/docs/java/Basis/Arrays,CollectionsCommonMethods.md)
+[博客](https://www.jianshu.com/p/0bf8fe0f153b)
+
+## 10.1 接口的默认方法
+
+Java 8允许我们给接口添加一个非抽象的方法实现，只需要使用 default关键字即可，这个特征又叫做扩展方法，示例如下：
+
+
+
+## 10.2 Lambda 表达式
+
+首先看看在老版本的Java中是如何排列字符串的：
+
+```dart
+List<String> names = Arrays.asList("peter", "anna", "mike", "xenia");
+
+Collections.sort(names, new Comparator<String>() {
+    @Override
+    public int compare(String a, String b) {
+        return b.compareTo(a);
+    }
+});
+```
+
+只需要给静态方法 Collections.sort 传入一个List对象以及一个比较器来按指定顺序排列。通常做法都是创建一个匿名的比较器对象然后将其传递给sort方法。
+
+在Java 8 中你就没必要使用这种传统的匿名对象的方式了，Java 8提供了更简洁的语法，lambda表达式：
+
+
+
+```rust
+Collections.sort(names, (String a, String b) -> {
+    return b.compareTo(a);
+});
+```
+
+看到了吧，代码变得更段且更具有可读性，但是实际上还可以写得更短：
+
+```rust
+Collections.sort(names, (String a, String b) -> b.compareTo(a));
+```
+
+对于函数体只有一行代码的，你可以去掉大括号{}以及return关键字，但是你还可以写得更短点：
+
+```css
+Collections.sort(names, (a, b) -> b.compareTo(a));
+```
+
+Java编译器可以自动推导出参数类型，所以你可以不用再写一次类型。接下来我们看看lambda表达式还能作出什么更方便的东西来
+
+
+
+## 10.3 函数式接口
+
+- 只包含一个抽象方法的接口，称为函数式接口。
+- 可以通过 Lambda 表达式来创建该接口的对象。
+
+函数式接口 (Functional Interface) 就是一个有且仅有一个抽象方法，但是可以有多个非抽象方法的接口。
+
+```tsx
+@FunctionalInterface
+public interface MyNumber {
+     double getValue();
+}
+
+@FunctionalInterface
+public interface MyNumber<T> {
+     T getValue(T t);
+}
+
+//使用lambda函数式创建对象
+public static void main(String[] args) {
+    System.out.println(toUpperString(str->str.toUpperCase(),"abc")); //ABC
+}
+
+public static String toUpperString(MyNumber<String> mn, String str) {
+    return mn.getValue(str);
+}
+```
+
+在之前的java中，典型的应用场景有 org.w3c.dom.events.EventTarget 的addEventListener 第二个参数 EventListener也是函数式接口
+
+
+
+
+
+## 10.4 stream流
+
+[博客](https://www.jianshu.com/p/bd6c6e094d2a)
+
+  Stream 是对集合(Collection)对象功能的增强，它专注于对集合对象进行各种非常便利、高效的聚合操作，或者大批量数据操作。通常我们需要多行代码才能完成的操作，借助于Stream流式处理可以很简单的实现。
+
+​    Stream 不是集合元素，它不是数据结构并不保存数据，它是有关算法和计算的，它更像一个高级版本的Iterator。同时Stream提供串行和并行两种模式进行汇聚操作。比如你的Stream里面有很多数据，Stream可以开多个线程每个线程处理一部分。最后把结果汇总起来。
+
+>适用数据源
+
+ 想使用Stream流，首先咱得先创建一个Stream流对象。创建Steam需要数据源．这些数据源可以是集合、可以是数组、可以使文件、甚至是你可以去自定义等等。
+
+
+
+### 10.4.1 file
+
+> Files.list()
+
+ 列出指定Path下面的所有文件。把这些文件作为Stream数据源。
+
+```cpp
+    @Test
+    public void fileListStream() {
+        Path path = Paths.get("D:\\job\\git\\google-guava-study\\src\\main\\resources");
+        try {
+            // 找到指定path下的所有的文件
+            Stream<Path> stream = Files.list(path);
+            // TODO: 对流对象做处理
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+> Files.walk()
+
+ Files.walk()方法用于遍历子文件(包括文件夹)。参数maxDepth用于指定遍历的深度。把子文件(子文件夹)作为Stream数据源。
+
+```csharp
+    @Test
+    public void fileWalkStream() {
+        Path path = Paths.get("D:\\job\\git\\google-guava-study\\src\\main\\resources");
+        try {
+            // 第二个参数用于指定遍历几层
+            Stream<Path> stream = Files.walk(path, 2);
+            // TODO: 对流对象做处理
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+> Files.find()
+
+Files.find方法用于遍历查找(过滤)子文件。参数里面会指定查询(过滤)条件。把过滤出来的子文件作为Stream的数据源。
+
+```csharp
+    @Test
+    public void fileFindStream() {
+        Path path = Paths.get("D:\\job\\git\\google-guava-study\\src\\main\\resources");
+        try {
+            // 找到指定path下的所有不是目录的文件
+           Stream<Path> stream = Files.find(path, 2, (path1, basicFileAttributes) -> {
+               // 过滤掉目录文件
+               return !basicFileAttributes.isDirectory();
+           });
+            // TODO: 对流对象做处理
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+> Files.lines()
+
+Files.lines方法是把指定Path文件里面的每一行内容作为Stream的数据源。
+
+```csharp
+    @Test
+    public void fileLineStream() {
+        Path path = Paths.get("D:\\job\\git\\google-guava-study\\src\\main\\resources\\application.yml");
+        try {
+            // 生成一个Stream对象
+            Stream<String> stream = Files.lines(path);
+            // TODO: 对流对象做处理
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+
+
+
+
+### 10.4.2 流操作符
+
+Stream提供的流操作符
+
+![](./assets/2.15.png)
+
+
+
+### 10.4.3 Stream流终端操作
+
+![](./assets/2.16.png)
+
