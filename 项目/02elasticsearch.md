@@ -358,7 +358,84 @@ fetch phase：接着由协调节点根据 doc id 去各个节点上**拉取实�
 
  
 
- 
+##  7 Lucene底层
+
+[博客](https://blog.csdn.net/njpjsoftdev/article/details/54015485)
+
+### 7.1 lucene字典
+
+使用lucene进行查询不可避免都会使用到其提供的字典功能，即根据给定的term找到该term所对应的倒排文档id列表等信息。实际上lucene索引文件后缀名为tim和tip的文件实现的就是lucene的字典功能。
+
+​    怎么实现一个字典呢？我们马上想到排序数组，即term字典是一个已经按字母顺序排序好的数组，数组每一项存放着term和对应的倒排文档id列表。每次载入索引的时候只要将term数组载入内存，通过二分查找即可。这种方法查询时间复杂度为Log(N)，N指的是term数目，占用的空间大小是O(N*str(term))。排序数组的缺点是消耗内存，即需要完整存储每一个term，当term数目多达上千万时，占用的内存将不可接受。
+
+![](./assets/2.10.png)
+
+
+
+
+
+### 7.2 常用字典数据结构
+
+![](./assets/2.11.png)
+
+
+
+### 7.3 FST原理简析
+
+ lucene从4开始大量使用的数据结构是FST（Finite State Transducer）。FST有两个优点：1）空间占用小。通过对词典中单词前缀和后缀的重复利用，压缩了存储空间；2）查询速度快。O(len(str))的查询时间复杂度。
+
+   下面简单描述下FST的构造过程（工具演示：[http://examples.mikemccandless.com/fst.py?terms=&cmd=Build+it%21](http://examples.mikemccandless.com/fst.py?terms=&cmd=Build+it!)）。我们对“cat”、 “deep”、 “do”、 “dog” 、“dogs”这5个单词进行插入构建FST（注：必须已排序）。
+
+1）插入“cat”
+
+   插入cat，每个字母形成一条边，其中t边指向终点。
+
+![](./assets/2.12.png)
+
+2）插入“deep”
+
+  与前一个单词“cat”进行最大前缀匹配，发现没有匹配则直接插入，P边指向终点。
+
+![](./assets/2.13.png)
+
+3）插入“do”
+
+  与前一个单词“deep”进行最大前缀匹配，发现是d，则在d边后增加新边o，o边指向终点。
+
+![](./assets/2.14.png)
+
+4）插入“dog”
+
+  与前一个单词“do”进行最大前缀匹配，发现是do，则在o边后增加新边g，g边指向终点。
+
+![](./assets/2.15.png)
+
+
+
+5）插入“dogs”
+
+   与前一个单词“dog”进行最大前缀匹配，发现是dog，则在g后增加新边s，s边指向终点。
+
+![](./assets/2.16.png)
+
+
+
+ 最终我们得到了如上一个有向无环图。利用该结构可以很方便的进行查询，如给定一个term “dog”，我们可以通过上述结构很方便的查询存不存在，甚至我们在构建过程中可以将单词与某一数字、单词进行关联，从而实现key-value的映射。
+
+
+
+
+
+# 8 ES&Solr
+
+## Elasticsearch 与 Solr 的比较总结
+
+- 二者安装都很简单；
+- Solr 利用 Zookeeper 进行分布式管理，而 Elasticsearch 自身带有分布式协调管理功能;
+- Solr 支持更多格式的数据，而 Elasticsearch 仅支持json文件格式；
+- Solr 官方提供的功能更多，而 Elasticsearch 本身更注重于核心功能，高级功能多有第三方插件提供；
+- Solr 在传统的搜索应用中表现好于 Elasticsearch，但在处理实时搜索应用时效率明显低于 Elasticsearch。
+- Solr 是传统搜索应用的有力解决方案，但 Elasticsearch 更适用于新兴的实时搜索应用。
 
  
 
