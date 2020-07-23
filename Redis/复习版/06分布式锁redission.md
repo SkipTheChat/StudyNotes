@@ -139,3 +139,4 @@ incrby myLock
 这时系统在业务语义上一定会出现问题，导致各种脏数据的产生。
 
 所以这个就是redis cluster，或者是redis master-slave架构的主从异步复制导致的redis分布式锁的最大缺陷：在redis master实例宕机的时候，可能导致多个客户端同时完成加锁。
+
