@@ -219,11 +219,11 @@ public class ServerProperties {
 
 2.再来看一个我们熟悉的，例如SpringMVC，查看mvc 的自动配置类：WebMVCAutoConfiguration（在spring.factories中加载）
 
-   ![1527933162533](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933162533.png)
+   ![1527933162533](/assets/1527933162533.png)
 
 打开WebMvcAutoConfiguration：
 
-![1527933633048](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933633048.png)
+![1527933633048](/assets/1527933633048.png)
 
 我们看到这个类上的4个注解：
 
@@ -245,11 +245,11 @@ public class ServerProperties {
 
 视图解析器：
 
-![1527933646831](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933646831.png)
+![1527933646831](/assets/1527933646831.png)
 
 处理器适配器（HandlerAdapter）：
 
-![1527933659948](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1527933659948.png)
+![1527933659948](/assets/1527933659948.png)
 
 还有很多，这里就不一一截图了。
 
@@ -257,19 +257,19 @@ public class ServerProperties {
 
 另外，这些默认配置的属性来自哪里呢？
 
-![1528096733440](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1528096733440.png)
+![1528096733440](/assets/1528096733440.png)
 
 我们看到，这里通过@EnableAutoConfiguration注解引入了两个属性：WebMvcProperties和ResourceProperties。
 
 我们查看这两个属性类：
 
-![1528096851318](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1528096851318.png)
+![1528096851318](/assets/1528096851318.png)
 
 找到了内部资源视图解析器的prefix和suffix属性。
 
 ResourceProperties中主要定义了静态资源（.js,.html,.css等)的路径：
 
-![1528096892588](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/springboot/assets/1528096892588.png)
+![1528096892588](/assets/1528096892588.png)
 
 如果我们要覆盖这些默认属性，只需要在application.properties中定义与其前缀prefix和字段名一致的属性即可。
 

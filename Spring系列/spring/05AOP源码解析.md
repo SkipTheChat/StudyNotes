@@ -909,37 +909,6 @@ public Object invoke(Object proxy, Method method, Object[] args) throws Throwabl
 
  
 
-```java
-//method是要增强的方法，proxy是代理类
-//JdkDynamicAopProxy的唯一方法invoke
-@Override
-public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-   
-            // 获取目标对象类targetClass
-            target = targetSource.getTarget();
-            if (target != null) {
-                targetClass = target.getClass();
-            }
-      // 2.获取适合当前方法的拦截器链
-      List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
-     //3.如果拦截器链为空，则直接通过反射执行目标方法
-      if (chain.isEmpty()) {
-         Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
-         retVal = AopUtils.invokeJoinpointUsingReflection(target, method, argsToUse);
-      }
-      else {    
-          //4.若拦截器链不为空，则创建方法调用 ReflectiveMethodInvocation 对象
-         invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
-          //5.调用 ReflectiveMethodInvocation 对象的 proceed() 方法启动拦截器链
-         retVal = invocation.proceed();
-      }
-    //6.处理返回值，并返回该值
-      return retVal;
-}
-```
-
-
-
 > 这里看一下上面代码的第五步触发拦截器
 
 proceed 根据 currentInterceptorIndex 来确定当前应执行哪个拦截器
@@ -1026,7 +995,7 @@ public class MethodBeforeAdviceInterceptor implements MethodInterceptor, Seriali
 
 > 来看一下调用通知方法的逻辑，proceed很明显是递归调用，等到currentInterceptorIndex == 拦截器
 
-![](D:/Jessica(note)/Marie(2019)/programming/08%E6%80%BB%E7%AC%94%E8%AE%B0/Spring%E7%B3%BB%E5%88%97/spring/assets/3.5.jpg)
+![](../spring/assets/3.5.jpg)
 
 
 
