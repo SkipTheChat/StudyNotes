@@ -1,9 +1,0 @@
-查看tomcat：
-	ps -ef | grep java
-
-
-解决无ip问题：
-	systemctl stop NetworkManager
-	systemctl disable NetworkManager
-	重新启动网络：
-	systemctl start network.service
