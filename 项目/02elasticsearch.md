@@ -20,7 +20,7 @@ Elasticsearch 是一个分布式可扩展的实时搜索和分析引擎,一个�
 
 **为什么要用es?**
 
-因为在我们商城中的数据，将来会非常多，所以采用以往的模糊查询，模糊查询前置配置，会放弃索引，导致商品查询是全表扫面，在百万级别的数据库中，效率非常低下，而我们使用ES做一个全文索引，我们将经常查询的商品的某些字段，比如说商品名，描述、价格还有id这些字段我们放入我们索引库里，可以提高查询速度。
+因为在我们商城中的数据，将来会非常多，所以采用以往的模糊查询，模糊查询前置配置，会放弃索引，导致商品查询是全表扫面，在百万级别的数据库中，效率非常低下，而我们使用E S做一个全文索引，我们将经常查询的商品的某些字段，比如说商品名，描述、价格还有id这些字段我们放入我们索引库里，可以提高查询速度。
 
 ### 1.1 四种节点
 
@@ -165,7 +165,7 @@ ID是Elasticsearch自建的文档id，那么Elasticsearch建立的索引如下:
 | 29 | 3 |
 ```
 
-**Sex:**
+**Sex:** 
 
 ```mysql
 | Term | Posting List |
@@ -202,7 +202,7 @@ Elasticsearch为了能快速找到某个term，将所有的term排个序，二�
 
 ![](./assets/2.2.png)
 
-所以term index不需要存下所有的term，而仅仅是他们的一些前缀与Term  Dictionary的block之间的映射关系，再结合FST(Finite State Transducers)的压缩技术，可以使term  index缓存到内存中。从term index查到对应的term  dictionary的block位置之后，再去磁盘上找term，大大减少了磁盘随机读的次数。
+所以term index不需要存下所有的term，而仅仅是他们的一些前缀与Term  Dictionary的block之间的映射关系，再结合 FST (Finite State Transducers) 的压缩技术，可以使term  index缓存到内存中。从term index查到对应的term  dictionary的block位置之后，再去磁盘上找term，大大减少了磁盘随机读的次数。
 
 
 
