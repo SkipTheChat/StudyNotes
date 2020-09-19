@@ -8,7 +8,7 @@
 
 
 	git remote -v (查看源)
-	git remote rm origin(删除源)
+	git remote rm origin(删除源) 
 总结：
 无论是修改了文件还是删除添加，如果不是第一次push，直接三行命令
 git add . 
