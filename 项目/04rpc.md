@@ -338,13 +338,53 @@ RPC 使用场景(大型的网站，内部子系统较多、接口非常多的情
 
 
 
-## 6 如何实现一个简单的RPC
+
+
+## 6 Springcloud&Dubbo
+
+| 功能名称     | Dubbo     | Spring Cloud                 |
+| ------------ | --------- | ---------------------------- |
+| 服务注册中心 | ZooKeeper | Spring Cloud Netflix Eureka  |
+| 服务调用方式 | RPC       | REST API                     |
+| 服务网关     | 无        | Spring Cloud Netflix Zuul    |
+| 断路器       | 不完善    | Spring Cloud Netflix Hystrix |
+| 分布式配置   | 无        | Spring Cloud Config          |
+| 服务跟踪     | 无        | Spring Cloud Sleuth          |
+| 消息总线     | 无        | Spring Cloud Bus             |
+| 数据流       | 无        | Spring Cloud Stream          |
+| 批量任务     | 无        | Spring Cloud Task            |
+
+
+
+Spring Cloud 抛弃了 Dubbo 的 RPC 通信，采用的是基于 HTTP 的 REST 方式。虽然从一定程度上来说，后者牺牲了服务调用的性能，但也避免了上面提到的原生 RPC 带来的问题。而且 REST 相比 RPC 更为灵活，服务提供方和调用方，不存在代码级别的强依赖，这在强调快速演化的微服务环境下显得更加合适。
+
+很明显，Spring Cloud 的功能比 Dubbo 更加强大，涵盖面更广，而且作为 Spring 的拳头项目，它也能够与 Spring Framework、Spring Boot、Spring Data、Spring Batch 等其他 Spring 项目完美融合，这些对于微服务而言是至关重要的。
+
+前面提到，微服务背后一个重要的理念就是持续集成、快速交付，而在服务内部使用一个统一的技术框架，显然比将分散的技术组合到一起更有效率。
+
+更重要的是，相比于 Dubbo，它是一个正在持续维护的、社区更加火热的开源项目，这就可以保证使用它构建的系统持续地得到开源力量的支持。
+
+> 下面列举 Spring Cloud 的几个优势
+
+- Spring Cloud 来源于 Spring，质量、稳定性、持续性都可以得到保证。
+- Spirng Cloud 天然支持 Spring Boot，更加便于业务落地。
+- Spring Cloud 发展得非常快，从开始接触时的相关组件版本为 1.x，到现在将要发布 2.x 系列。
+- Spring Cloud 是 [Java](http://c.biancheng.net/java/) 领域最适合做微服务的框架。
+
+
+相比于其他框架，Spring Cloud 对微服务周边环境的支持力度最大。对于中小企业来讲，使用门槛较低。
+
+
+
+
+
+## 7 如何实现一个简单的RPC
 
 [博客](https://www.jianshu.com/p/5b90a4e70783)
 
 **要实现一个RPC不算难，难的是实现一个高性能高可靠的RPC框架。**
 
-#### 6.1 一个简陋的RPC
+#### 7.1 一个简陋的RPC
 
 首先是Client端的应用层怎么发起RPC，ComsumerApp： 
 
@@ -450,7 +490,7 @@ public class ProviderApp {
 
  
 
-####  6.2 优化
+####  7.2 优化
 
 这个RPC实现只是为了给大家演示一下RPC的原理，要是想放到生产环境去用，那是绝对不行的。
 
@@ -527,9 +567,7 @@ public class RpcInvocation implements Invocation, Serializable {
 
  
 
- 
 
- 
 
  
 

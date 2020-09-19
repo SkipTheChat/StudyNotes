@@ -70,14 +70,14 @@ Tracker server在内存中记录分组和Storage server的状态等信息，不�
 
 ## 1.3 FastDFS为什么要结合Nginx
 
-我们在使用FastDFS部署一个分布式文件系统的时候，通过FastDFS的客户端API来进行文件的上传、下载、删除等操作。同时通过FastDFS的HTTP服务器来提供HTTP服务。但是FastDFS的HTTP服务较为简单，无法提供负载均衡等高性能的服务，所以FastDFS的开发者——淘宝的架构师余庆同学，为我们提供了Nginx上使用的FastDFS模块（也可以叫FastDFS的Nginx模块）。其使用非常简单。
+我们在使用FastDFS部署一个分布式文件系统的时候，通过FastDFS的客户端API来进行文件的上传、下载、删除等操作。同时通过FastDFS的HTTP服务器来提供HTTP服务。**但是FastDFS的HTTP服务较为简单，无法提供负载均衡等高性能的服务**，所以FastDFS的开发者——淘宝的架构师余庆同学，为我们提供了Nginx上使用的FastDFS模块（也可以叫FastDFS的Nginx模块）。其使用非常简单。
 FastDFS通过Tracker服务器,将文件放在Storage服务器存储,但是同组之间的服务器需要复制文件,有延迟的问题.假设Tracker服务器将文件上传到了192.168.1.80,文件ID已经返回客户端,这时,后台会将这个文件复制到192.168.1.30,如果复制没有完成,客户端就用这个ID在192.168.1.30取文件,肯定会出现错误。这个fastdfs-nginx-module可以重定向连接到源服务器取文件,避免客户端由于复制延迟的问题,出现错误。
 
 
 
 # 2 设计原理
 
-[FastDFS](https://link.jianshu.com?t=https%3A%2F%2Fcode.google.com%2Fp%2Ffastdfs%2F)是一个开源的分布式文件系统，由tracker serverstorage server和client三个部分组成，主要解决了海量数据存储问题，特别适合以中小文件（建议范围：4KB < file_size <500MB）为载体。
+[FastDFS](https://link.jianshu.com?t=https%3A%2F%2Fcode.google.com%2Fp%2Ffastdfs%2F)是一个开源的分布式文件系统，由tracker serverstorage server和client三个部分组成，主要解决了海量数据存储问题，特别适合以中小文件（**建议范围：4KB < file_size <500MB**）为载体。
 
 ### **1 Storage server**
 
@@ -88,6 +88,11 @@ Storage server（后简称storage）以组（group）为单位，一个group内�
 group内每个storage的存储依赖于本地文件系统，storage可配置多个数据存储目录，比如有10块磁盘，分别挂载在/data/disk1-/data/disk10，则可将这10个目录都配置为storage的数据存储目录。
 
 storage接受到写文件请求时，会根据配置好的规则，选择其中一个存储目录来存储文件。为了避免单个目录下的文件数太多，在storage第一次启动时，会在每个数据存储目录里创建2级子目录，每级256个，总共65536个文件，新写的文件会以hash的方式被路由到其中某个子目录下，然后将文件数据直接作为一个本地文件存储到该目录中。
+
+![](./assets/1.1.png)
+
+1.通过组名tracker能够很快的定位到客户端需要访问的存储服务器组是group1，并选择合适的存储服务器提供客户端访问。
+2.存储服务器根据“文件存储虚拟磁盘路径”和“数据文件两级目录”可以很快定位到文件所在目录，并根据文件名找到客户端需要访问的文件。
 
 
 
